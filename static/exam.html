@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4-view exam | MammoScan AI</title>
+<style>
+  :root{--bg:#fdf6f9;--card:#fff;--ink:#1d2939;--muted:#667085;--brand:#e75480;--brand-deep:#c2185b;--brand-light:#f48fb1;--brand-2:#57585c;
+        --low:#12b76a;--review:#f79009;--high:#d92d20;--line:#f3e1e8;--dark:#0b0b0f;--dark-2:#16161d;--dark-3:#26262f}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+  .wrap{max-width:1440px;margin:0 auto;width:100%}
+
+  /* Top bar */
+  .topbar{background:#fff;border-bottom:1px solid var(--line);box-shadow:0 1px 4px rgba(16,24,40,.05)}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px}
+  .topbar img{height:32px;width:auto;display:block}
+  .nav{display:flex;gap:4px;background:#fdeef4;padding:4px;border-radius:999px;flex-wrap:wrap}
+  .nav a{font-size:13px;font-weight:600;color:var(--brand-deep);text-decoration:none;padding:7px 14px;border-radius:999px;white-space:nowrap}
+  .nav a.on{background:var(--brand);color:#fff}
+  .signout{font-size:13px;font-weight:600;color:var(--brand);text-decoration:none;border:1.5px solid var(--brand);padding:6px 14px;border-radius:999px;white-space:nowrap}
+  .signout:hover{background:var(--brand);color:#fff}
+  @media(max-width:900px){.topbar .wrap{flex-wrap:wrap}.topbar img{height:22px}}
+
+  header{background:linear-gradient(120deg,var(--brand-light),var(--brand) 50%,var(--brand-deep));color:#fff;padding:16px 0 18px}
+  header .wrap{padding:0 24px} header h1{font-size:21px} header p{opacity:.95;margin-top:3px;font-size:14px}
+
+  main{padding:20px 24px 8px;flex:1}
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+  @media(max-width:1150px){.layout{grid-template-columns:1fr}}
+  .card{background:var(--card);border-radius:18px;box-shadow:0 10px 30px rgba(194,24,91,.08)}
+
+  /* ---------- Viewer ---------- */
+  .viewer{background:var(--dark);border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(16,24,40,.25);position:relative}
+  .vbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--dark-2);color:#e4e7ec;flex-wrap:wrap}
+  .vbar h2{font-size:15px;display:flex;align-items:center;gap:8px}
+  .vbar h2 svg{color:var(--brand-light)}
+  .vtools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .toggle{display:inline-flex;background:var(--dark-3);border-radius:999px;padding:3px}
+  .toggle button{border:none;background:none;padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:600;color:#c0c4cc;cursor:pointer;font-family:inherit}
+  .toggle button.on{background:var(--brand);color:#fff}
+  .toggle button:disabled{opacity:.35;cursor:not-allowed}
+  .vbtn{border:1px solid #3a3a46;background:none;color:#c0c4cc;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;cursor:pointer;font-family:inherit}
+  .vbtn:hover:not(:disabled){border-color:var(--brand-light);color:#fff}
+  .vbtn.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .vbtn.dl{background:var(--brand);border-color:var(--brand);color:#fff}
+  .vbtn.dl:hover:not(:disabled){background:var(--brand-deep);border-color:var(--brand-deep)}
+  .vbtn:disabled{opacity:.35;cursor:not-allowed}
+
+  .panes{display:grid;grid-template-columns:repeat(4,1fr);height:min(70vh,640px);min-height:440px}
+  @media(max-width:900px){.panes{grid-template-columns:repeat(2,1fr);height:auto;min-height:0}.pane{height:360px}}
+  .pane{position:relative;border-right:1px solid #2a2a33;overflow:hidden;cursor:pointer;transition:background .2s;touch-action:none;min-width:0}
+  .pane:nth-child(2){border-right:6px solid var(--dark-2)}
+  .pane:last-child{border-right:none}
+  .pane .lbl{position:absolute;top:10px;left:12px;font-size:12px;font-weight:700;letter-spacing:.06em;color:#e4e7ec;z-index:3;text-shadow:0 1px 3px #000}
+
+  .stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transform-origin:50% 50%;will-change:transform}
+  .pane.done.r .stage{justify-content:flex-end}
+  .pane.done.l .stage{justify-content:flex-start}
+  .stage img{max-width:100%;max-height:100%;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none}
+  .pane.zoomed{cursor:grab}
+  .pane.panning{cursor:grabbing}
+  .zctl{position:absolute;top:34px;left:10px;display:flex;align-items:center;gap:2px;background:rgba(16,16,22,.85);border:1px solid #3a3a46;border-radius:999px;padding:2px;z-index:4;opacity:0;transition:opacity .2s}
+  .pane:hover .zctl,.pane.zoomed .zctl{opacity:1}
+  .zctl button{border:none;background:none;color:#e4e7ec;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:15px;line-height:1;font-family:inherit}
+  .zctl button:hover{background:var(--brand);color:#fff}
+  .zctl span{font-size:11px;color:#c0c4cc;min-width:38px;text-align:center;font-variant-numeric:tabular-nums}
+
+  .pane .empty{position:absolute;inset:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#8a8f98;font-size:13px;padding:18px 14px;border:2px dashed #3a3a46;border-radius:14px;line-height:1.5;transition:.2s}
+  .pane .empty b{display:block;color:#e4e7ec;font-size:15px;margin-bottom:4px;letter-spacing:.04em}
+  .pane:hover .empty,.pane.drag .empty{border-color:var(--brand-light);color:#e4e7ec}
+  .pane.drag{background:#1d1520}
+  .pane .fname{position:absolute;bottom:10px;left:12px;right:12px;max-width:calc(100% - 24px);background:rgba(16,16,22,.75);padding:3px 8px;border-radius:6px;font-size:11px;color:#c0c4cc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:3}
+  .pane .x{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:var(--dark-3);color:#c0c4cc;cursor:pointer;z-index:4;font-size:16px;line-height:1}
+  .pane .x:hover{background:var(--high);color:#fff}
+  .pane .chip{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:rgba(16,16,22,.88);border:1px solid #3a3a46;color:#fff;font-size:12.5px;font-weight:700;white-space:nowrap;z-index:3;pointer-events:none}
+  .pane .chip i{width:9px;height:9px;border-radius:50%}
+  .pane .top{position:absolute;top:8px;right:10px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:var(--brand);color:#fff;padding:3px 8px;border-radius:999px;z-index:3;pointer-events:none}
+  .pane .ring{position:absolute;inset:0;z-index:2;pointer-events:none}
+  .pane.done.high .ring{box-shadow:inset 0 0 0 3px var(--high)}
+  .pane.done.review .ring{box-shadow:inset 0 0 0 3px var(--review)}
+
+  .overlay{position:absolute;inset:0;background:rgba(11,11,15,.78);display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#e4e7ec;z-index:5;font-size:14px}
+  .overlay.show{display:flex}
+  .spinner{width:46px;height:46px;border:4px solid #3a2a33;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .vfoot{padding:10px 16px;background:var(--dark-2);color:#98a2b3;font-size:12px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .vfoot i{display:inline-block;width:9px;height:9px;border-radius:3px;margin:0 5px 0 12px;vertical-align:-1px}
+
+  /* ---------- Side panel ---------- */
+  .side{padding:20px;display:flex;flex-direction:column;gap:16px}
+  .side,.side>*,#prep,#res,.checklist{min-width:0}
+  .side h2{font-size:16px;display:flex;align-items:center;gap:8px}
+  .side h2 svg{color:var(--brand)}
+  .side h3{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+  .checklist{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+  .ck{display:flex;align-items:center;gap:10px;min-width:0;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font-size:13px;background:#fffafc}
+  .ck b{width:46px;flex-shrink:0}
+  .ck span{flex:1;min-width:0;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ck i{font-style:normal;font-weight:800;color:#c0c4cc}
+  .ck.ok{background:#f6fef9;border-color:#abefc6}.ck.ok i{color:var(--low)}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.5}
+  .btn{border:1.5px solid var(--brand);background:#fff;color:var(--brand);font-weight:600;font-size:13.5px;padding:10px 16px;border-radius:12px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+  .btn:hover:not(:disabled){background:#fdeef4}
+  .btn.primary{border:none;color:#fff;background:linear-gradient(120deg,var(--brand),var(--brand-deep))}
+  .btn.primary:hover:not(:disabled){box-shadow:0 6px 18px rgba(231,84,128,.35);background:linear-gradient(120deg,var(--brand),var(--brand-deep))}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.block{width:100%}
+  input[type=file]{display:none}
+  .err{display:none;padding:11px 14px;border-radius:12px;background:#fef3f2;color:#b42318;font-size:13.5px;border:1px solid #fecdca}
+  .err.show{display:block}
+  .info{display:none;padding:10px 14px;border-radius:12px;background:#fdeef4;color:var(--brand-deep);font-size:12.5px;border:1px solid #f8c9da}
+  .info.show{display:block}
+
+  .verdict{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1px solid transparent}
+  .verdict .ico{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:18px;font-weight:800;flex-shrink:0}
+  .verdict b{font-size:16px;display:block}
+  .verdict small{opacity:.9;font-size:12.5px;display:block;margin-top:2px;line-height:1.4}
+  .verdict.low{background:#ecfdf3;color:#05603a;border-color:#abefc6}.verdict.low .ico{background:var(--low)}
+  .verdict.review{background:#fffaeb;color:#93370d;border-color:#fedf89}.verdict.review .ico{background:var(--review)}
+  .verdict.high{background:#fef3f2;color:#912018;border-color:#fecdca}.verdict.high .ico{background:var(--high)}
+  .exam{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:14px}
+  .exam .t{font-size:13px;color:var(--muted)}
+  .exam .big{font-size:30px;font-weight:800;line-height:1}
+  .badge{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px;color:#fff;white-space:nowrap}
+  .badge.high{background:var(--high)}.badge.review{background:var(--review)}.badge.low{background:var(--low)}.badge.none{background:#98a2b3}
+  .breasts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .br{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .br .n{font-size:12px;color:var(--muted);font-weight:600}
+  .br .v{font-size:20px;font-weight:800;margin:2px 0 4px}
+  .vlist{display:grid;gap:6px}
+  .vr{display:grid;grid-template-columns:46px 1fr 52px;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:13px;cursor:pointer;transition:.15s}
+  .vr:hover{border-color:var(--brand);background:#fffafc}
+  .vr.na{opacity:.45;cursor:default}
+  .vr .mini{height:7px;background:#f2f4f7;border-radius:99px;overflow:hidden}
+  .vr .mini i{display:block;height:100%;border-radius:99px}
+  .vr .s{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+  .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px}
+
+  /* PDF report */
+  .rpt{padding:14px;border:1px solid var(--line);border-radius:14px;display:grid;gap:8px}
+  .rpt h3{margin:0}
+  .rpt input[type=text]{width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;font-family:inherit}
+  .rpt input[type=text]:focus{outline:none;border-color:var(--brand)}
+  .rpt .row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+  .rpt-msg{font-size:12px;color:var(--muted)} .rpt-msg.bad{color:#b42318}
+
+  /* Review (collapsible) */
+  .fb{border:1px solid var(--line);border-radius:14px;background:#fffafc;overflow:hidden}
+  .fb-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none}
+  .fb-h h3{margin:0}
+  .fb-h:hover{background:#fdeef4}
+  .fb-h .chev{transition:transform .2s;color:var(--brand);font-size:12px;margin-left:6px}
+  .fb.open .fb-h .chev{transform:rotate(180deg)}
+  .fb-body{display:none;padding:0 14px 14px}
+  .fb.open .fb-body{display:block}
+  .fb-r{display:flex;align-items:center;gap:6px}
+  .fb-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;background:#f2f4f7;color:#475467}
+  .fb-status.done{background:#ecfdf3;color:#05603a}
+  .agree{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+  .ag{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:8px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit}
+  .ag:hover{border-color:var(--brand)}
+  .ag.on[data-v=agree]{border-color:var(--low);background:#ecfdf3;color:#05603a}
+  .ag.on[data-v=disagree]{border-color:var(--high);background:#fef3f2;color:#912018}
+  .fb label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px}
+  .vchk{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+  .vchk span{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;user-select:none}
+  .vchk span.on{background:var(--high);border-color:var(--high);color:#fff}
+  .fb select,.fb input,.fb textarea{width:100%;margin-top:4px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;font-family:inherit;color:var(--ink);background:#fff}
+  .fb textarea{resize:vertical}
+  .fb select:focus,.fb input:focus,.fb textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(231,84,128,.12)}
+  .fb-act{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px}
+  .fb-msg{font-size:12px;color:var(--muted)} .fb-msg.ok{color:#05603a} .fb-msg.bad{color:#b42318}
+
+  .lb{position:fixed;inset:0;background:rgba(0,0,0,.93);display:none;align-items:center;justify-content:center;z-index:50;flex-direction:column;gap:12px;color:#e4e7ec;cursor:zoom-out}
+  .lb.show{display:flex}
+  .lb img{max-width:94vw;max-height:84vh}
+  .lb .cap{font-size:14px;font-weight:600}
+
+  .note{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6;margin-top:16px}
+  footer{border-top:3px solid var(--brand);background:#fff;margin-top:20px}
+  footer .wrap{padding:16px 24px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <img src="/static/logo.jpeg" alt="Leya Art Ntelznx Private Limited">
+  <nav class="nav">
+    <a href="/app">Single image</a>
+    <a href="/exam" class="on">4-view exam</a>
+    <a href="/bulk">Bulk analysis</a>
+    <a href="/settings">Settings</a>
+    <a href="/api/feedback/export">Download reviews</a>
+  </nav>
+  <a class="signout" href="/logout">Sign out</a>
+</div></div>
+
+<header><div class="wrap">
+  <h1>4-view exam</h1>
+  <p>Upload RCC, LCC, RMLO and LMLO for one patient. Each view is scored and the abnormal views are highlighted.</p>
+</div></header>
+
+<main class="wrap">
+  <div class="layout">
+
+    <section class="viewer" id="viewer">
+      <div class="vbar">
+        <h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 3v18M3 12h18"/></svg>Exam viewer</h2>
+        <div class="vtools">
+          <div class="toggle">
+            <button type="button" id="mHeat" class="on" disabled>Heat map</button>
+            <button type="button" id="mOrig" disabled>Original</button>
+          </div>
+          <button type="button" class="vbtn" id="syncZ" title="Zoom and pan all four views together">Sync zoom</button>
+          <button type="button" class="vbtn" id="resetZ" title="Reset zoom on all views">Reset zoom</button>
+          <button type="button" class="vbtn dl" id="rptTop" disabled title="Download the AI pre-read report as PDF">&#11015; Download report</button>
+          <button type="button" class="vbtn" id="clearAll">Clear</button>
+        </div>
+      </div>
+      <div class="panes">
+        <div class="pane r" id="p-rcc" data-k="rcc"></div>
+        <div class="pane l" id="p-lcc" data-k="lcc"></div>
+        <div class="pane r" id="p-rmlo" data-k="rmlo"></div>
+        <div class="pane l" id="p-lmlo" data-k="lmlo"></div>
+      </div>
+      <div class="overlay" id="ov"><div class="spinner"></div><div id="ovTxt">Analysing views…</div></div>
+      <div class="vfoot">
+        <span>Scroll to zoom · drag to pan · double-click to reset · &#10530; to enlarge. Views are detected from file names (e.g. "1R CC", "4L MLO").</span>
+        <span><i style="background:var(--high)"></i>High priority<i style="background:var(--review)"></i>Review<i style="background:var(--low)"></i>Low</span>
+      </div>
+    </section>
+
+    <aside class="card side">
+
+      <div class="info" id="info"></div>
+
+      <div id="prep">
+        <h2 style="margin-bottom:14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>Upload views</h2>
+        <div class="checklist" id="checklist"></div>
+        <p class="hint" style="margin:12px 0">Missing a view? You can still analyse – the result covers the views provided.</p>
+        <div style="display:grid;gap:8px">
+          <button class="btn block" id="pickMany" type="button">Select images…</button>
+          <button class="btn primary block" id="go" type="button" disabled>Analyse exam</button>
+        </div>
+        <input type="file" id="many" multiple accept=".dcm,.png,.jpg,.jpeg,.tif,.tiff">
+        <input type="file" id="one" accept=".dcm,.png,.jpg,.jpeg,.tif,.tiff">
+      </div>
+
+      <div class="err" id="err"></div>
+
+      <div id="res" style="display:none;flex-direction:column;gap:16px">
+        <h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/></svg>Assessment</h2>
+
+        <div class="verdict" id="verdict"><div class="ico" id="vIco"></div><div><b id="vTitle"></b><small id="vSub"></small></div></div>
+
+        <div class="exam"><span class="t">Exam score<br><span class="badge" id="eBadge"></span></span><span class="big" id="ePct"></span></div>
+
+        <div>
+          <h3>By breast</h3>
+          <div class="breasts">
+            <div class="br"><div class="n">Right breast</div><div class="v" id="bR"></div><span class="badge" id="bRb"></span></div>
+            <div class="br"><div class="n">Left breast</div><div class="v" id="bL"></div><span class="badge" id="bLb"></span></div>
+          </div>
+        </div>
+
+        <div>
+          <h3>By view</h3>
+          <div class="vlist" id="vlist"></div>
+        </div>
+        <div class="legend" id="legend"></div>
+
+        <div class="rpt">
+          <h3>AI pre-read report</h3>
+          <input type="text" id="caseRef" maxlength="40" placeholder="Case reference (optional) – do not use UHID or name">
+          <label class="row"><input type="checkbox" id="rptOrig" checked> Include original images (page 2)</label>
+          <button type="button" class="btn primary block" id="rptBtn">&#11015; Download PDF report</button>
+          <span class="rpt-msg" id="rptMsg">Generated before radiologist review. Marked as pending review.</span>
+        </div>
+
+        <div class="fb" id="fbBox">
+          <div class="fb-h" id="fbToggle" role="button" tabindex="0" aria-expanded="false">
+            <h3>Radiologist review</h3>
+            <span class="fb-r"><span class="fb-status" id="fbStatus">Not reviewed</span><span class="chev">&#9660;</span></span>
+          </div>
+          <div class="fb-body">
+            <div class="agree">
+              <button type="button" class="ag" data-v="agree">&#10003; Agree with AI</button>
+              <button type="button" class="ag" data-v="disagree">&#10005; Disagree</button>
+            </div>
+            <label>Abnormal views (your reading)
+              <div class="vchk" id="vchk">
+                <span data-k="rcc">RCC</span><span data-k="lcc">LCC</span><span data-k="rmlo">RMLO</span><span data-k="lmlo">LMLO</span>
+              </div>
+            </label>
+            <label>Radiologist assessment
+              <select id="fbFinding">
+                <option value="">Select (optional)…</option>
+                <option>BI-RADS 0 – Incomplete, needs additional imaging</option>
+                <option>BI-RADS 1 – Negative</option>
+                <option>BI-RADS 2 – Benign</option>
+                <option>BI-RADS 3 – Probably benign</option>
+                <option>BI-RADS 4 – Suspicious</option>
+                <option>BI-RADS 5 – Highly suggestive of malignancy</option>
+              </select>
+            </label>
+            <label>Breast density
+              <select id="fbDensity">
+                <option value="">Select (optional)…</option>
+                <option value="A">A – Almost entirely fatty</option>
+                <option value="B">B – Scattered fibroglandular density</option>
+                <option value="C">C – Heterogeneously dense</option>
+                <option value="D">D – Extremely dense</option>
+              </select>
+            </label>
+            <label>Reviewer<input id="fbName" placeholder="Name or ID" maxlength="80"></label>
+            <textarea id="fbNote" rows="2" maxlength="2000" placeholder="Comments (optional) – do not enter patient identifiers"></textarea>
+            <div class="fb-act">
+              <span class="fb-msg" id="fbMsg"></span>
+              <button type="button" class="btn primary" id="fbSave" disabled style="padding:8px 14px">Submit review</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn" id="again" type="button" style="align-self:flex-end">&#8634; New exam</button>
+      </div>
+    </aside>
+  </div>
+
+  <p class="note">&#9877;&#65039; Decision support only. All views, including low-suspicion results, must be reviewed by a qualified radiologist. Use de-identified images only.</p>
+</main>
+
+<div class="lb" id="lb"><img id="lbImg" alt=""><div class="cap" id="lbCap"></div></div>
+
+<footer><div class="wrap">© <span id="yr"></span> Leya Art Ntelznx Private Limited. Proprietary &amp; confidential.</div></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const setText = (id, t) => { const el = $(id); if (el) el.textContent = t; };
+setText("yr", new Date().getFullYear());
+
+const KEYS = ["rcc", "lcc", "rmlo", "lmlo"];
+const LABEL = { rcc: "RCC", lcc: "LCC", rmlo: "RMLO", lmlo: "LMLO" };
+const BAND = { high: "High priority", review: "Review", low: "Low suspicion" };
+const COLOR = { high: "var(--high)", review: "var(--review)", low: "var(--low)" };
+const ICONS = { low: "✓", review: "!", high: "!!" };
+const MAX_TOTAL_MB = 30;
+
+let files = {}, thumbs = {}, result = null, mode = "heat", pickKey = null, busy = false;
+let currentReportId = null;
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const pct = v => (Number(v || 0) * 100).toFixed(1) + "%";
+const viewOf = key => (result && result.views && result.views[key]) || null;
+
+function detectView(name) {
+  const m = name.match(/([LR])\s*\d?\s*(CC|MLO)\b/i);
+  return m ? (m[1] + m[2]).toLowerCase() : null;
+}
+function canPreview(f) { return /\.(png|jpe?g)$/i.test(f.name); }
+
+/* ---------- Zoom state ---------- */
+const MIN_Z = 1, MAX_Z = 8;
+const zoom = {};
+let sync = false, dragMoved = false, drag = null;
+KEYS.forEach(k => { zoom[k] = { s: 1, x: 0, y: 0 }; });
+function resetZoom(key) { zoom[key] = { s: 1, x: 0, y: 0 }; }
+function hasImage(key) { return !!document.getElementById("st-" + key); }
+
+/* ---------- Files ---------- */
+function setFile(key, f) {
+  if (thumbs[key]) URL.revokeObjectURL(thumbs[key]);
+  if (f) {
+    files[key] = f;
+    thumbs[key] = canPreview(f) ? URL.createObjectURL(f) : null;
+  } else {
+    delete files[key];
+    delete thumbs[key];
+  }
+  result = null;
+  currentReportId = null;
+  hideInfo();
+  resetZoom(key);
+  hideErr();
+  render();
+}
+
+function addMany(list) {
+  const unknown = [];
+  Array.from(list).forEach(f => {
+    const k = detectView(f.name);
+    if (k) setFile(k, f); else unknown.push(f);
+  });
+  unknown.forEach(f => {
+    const free = KEYS.find(k => !files[k]);
+    if (free) setFile(free, f);
+  });
+  if (unknown.length) showErr(unknown.length + " file(s) had no view in the name and were placed in empty slots. Check the labels.");
+}
+
+/* ---------- Rendering ---------- */
+function zoomCtl(key) {
+  const exp = viewOf(key) ? `<button type="button" data-z="full" title="Enlarge">&#10530;</button>` : "";
+  return `<div class="zctl"><button type="button" data-z="out" title="Zoom out">−</button>`
+       + `<span id="zl-${key}">100%</span><button type="button" data-z="in" title="Zoom in">+</button>`
+       + `<button type="button" data-z="reset" title="Reset">&#10226;</button>${exp}</div>`;
+}
+
+function render() {
+  KEYS.forEach(key => {
+    const el = $("p-" + key);
+    const v = viewOf(key);
+    el.className = "pane " + (key.startsWith("r") ? "r" : "l") + (v ? " done " + v.band : "");
+    let html = `<span class="lbl">${LABEL[key]}</span>`;
+    if (v) {
+      const src = (mode === "heat" && v.heatmap) ? v.heatmap : v.preview;
+      html += `<div class="stage" id="st-${key}"><img src="${src}" alt="${LABEL[key]}"></div>`;
+      html += `<div class="ring"></div>` + zoomCtl(key);
+      html += `<span class="chip"><i style="background:${COLOR[v.band]}"></i>${pct(v.score)} · ${BAND[v.band]}</span>`;
+      if (key === result.top && v.band !== "low") html += `<span class="top">Highest</span>`;
+    } else if (files[key]) {
+      html += thumbs[key]
+        ? `<div class="stage" id="st-${key}"><img src="${thumbs[key]}" alt=""></div>` + zoomCtl(key)
+        : `<div class="empty"><b>DICOM ready</b>Preview after analysis</div>`;
+      html += `<span class="fname" title="${esc(files[key].name)}">${esc(files[key].name)}</span><button class="x" data-x="${key}" title="Remove">×</button>`;
+    } else {
+      html += `<div class="empty"><b>${LABEL[key]}</b>Drop image here<br>or click to browse</div>`;
+    }
+    el.innerHTML = html;
+    applyZoom(key);
+  });
+
+  $("checklist").innerHTML = KEYS.map(k => {
+    const f = files[k];
+    return `<div class="ck ${f ? "ok" : ""}"><b>${LABEL[k]}</b><span title="${f ? esc(f.name) : ""}">${f ? esc(f.name) : "Not added"}</span><i>${f ? "✓" : "–"}</i></div>`;
+  }).join("");
+
+  const n = Object.keys(files).length;
+  $("go").disabled = busy || n === 0;
+  $("go").textContent = n === 4 ? "Analyse exam (4 views)" : (n ? `Analyse exam (${n} of 4 views)` : "Analyse exam");
+  $("mHeat").disabled = $("mOrig").disabled = !result;
+  $("mHeat").classList.toggle("on", mode === "heat");
+  $("mOrig").classList.toggle("on", mode === "orig");
+  $("rptTop").disabled = !result || busy;
+  $("prep").style.display = result ? "none" : "block";
+  $("res").style.display = result ? "flex" : "none";
+}
+
+function showErr(t) { $("err").textContent = "⚠️ " + t; $("err").classList.add("show"); }
+function hideErr() { $("err").classList.remove("show"); }
+function showInfo(t) { $("info").textContent = t; $("info").classList.add("show"); }
+function hideInfo() { $("info").classList.remove("show"); }
+
+/* ---------- Zoom & pan ---------- */
+function clampPan(key) {
+  const z = zoom[key], el = $("p-" + key);
+  const mx = el.clientWidth * (z.s - 1) / 2, my = el.clientHeight * (z.s - 1) / 2;
+  z.x = Math.max(-mx, Math.min(mx, z.x));
+  z.y = Math.max(-my, Math.min(my, z.y));
+}
+function applyZoom(key) {
+  const st = document.getElementById("st-" + key);
+  const z = zoom[key];
+  if (st) st.style.transform = `translate(${z.x}px, ${z.y}px) scale(${z.s})`;
+  const lbl = document.getElementById("zl-" + key);
+  if (lbl) lbl.textContent = Math.round(z.s * 100) + "%";
+  $("p-" + key).classList.toggle("zoomed", z.s > 1.001);
+}
+function targets(key) { return sync ? KEYS.filter(hasImage) : [key]; }
+function zoomAt(key, factor, cx, cy) {
+  targets(key).forEach(k => {
+    const z = zoom[k];
+    const ns = Math.max(MIN_Z, Math.min(MAX_Z, z.s * factor));
+    const r = ns / z.s;
+    z.x = cx - (cx - z.x) * r;
+    z.y = cy - (cy - z.y) * r;
+    z.s = ns;
+    if (ns === 1) { z.x = 0; z.y = 0; }
+    clampPan(k); applyZoom(k);
+  });
+}
+function zoomBtn(key, what) {
+  if (what === "in") zoomAt(key, 1.4, 0, 0);
+  else if (what === "out") zoomAt(key, 1 / 1.4, 0, 0);
+  else if (what === "reset") targets(key).forEach(k => { resetZoom(k); applyZoom(k); });
+  else if (what === "full") openLb(key);
+}
+
+document.querySelectorAll(".pane").forEach(p => {
+  const key = p.dataset.k;
+
+  p.addEventListener("click", e => {
+    const x = e.target.closest(".x");
+    if (x) { e.stopPropagation(); setFile(x.dataset.x, null); return; }
+    const z = e.target.closest("[data-z]");
+    if (z) { e.stopPropagation(); zoomBtn(key, z.dataset.z); return; }
+    if (dragMoved) { dragMoved = false; return; }
+    if (hasImage(key) || viewOf(key) || busy || result) return;
+    pickKey = key;
+    $("one").click();
+  });
+
+  p.addEventListener("wheel", e => {
+    if (!hasImage(key)) return;
+    e.preventDefault();
+    const r = p.getBoundingClientRect();
+    zoomAt(key, e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2);
+  }, { passive: false });
+
+  p.addEventListener("pointerdown", e => {
+    if (!hasImage(key) || zoom[key].s <= 1.001 || e.target.closest("button")) return;
+    drag = { key, sx: e.clientX, sy: e.clientY, start: KEYS.map(k => ({ k, x: zoom[k].x, y: zoom[k].y })) };
+    dragMoved = false;
+    p.setPointerCapture(e.pointerId);
+    p.classList.add("panning");
+  });
+  p.addEventListener("pointermove", e => {
+    if (!drag || drag.key !== key) return;
+    const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+    if (Math.abs(dx) + Math.abs(dy) > 3) dragMoved = true;
+    targets(key).forEach(k => {
+      const s0 = drag.start.find(o => o.k === k);
+      zoom[k].x = s0.x + dx; zoom[k].y = s0.y + dy;
+      clampPan(k); applyZoom(k);
+    });
+  });
+  const end = () => { if (drag && drag.key === key) { drag = null; p.classList.remove("panning"); } };
+  p.addEventListener("pointerup", end);
+  p.addEventListener("pointercancel", end);
+
+  p.addEventListener("dblclick", e => {
+    if (!hasImage(key) || e.target.closest("button")) return;
+    targets(key).forEach(k => { resetZoom(k); applyZoom(k); });
+  });
+
+  ["dragenter", "dragover"].forEach(ev => p.addEventListener(ev, e => { e.preventDefault(); p.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach(ev => p.addEventListener(ev, e => { e.preventDefault(); p.classList.remove("drag"); }));
+  p.addEventListener("drop", e => {
+    if (busy) return;
+    const list = e.dataTransfer.files;
+    if (!list.length) return;
+    if (result) resetAll();
+    if (list.length === 1) {
+      const f = list.item(0);
+      setFile(detectView(f.name) || key, f);
+    } else addMany(list);
+  });
+});
+
+$("syncZ").addEventListener("click", () => { sync = !sync; $("syncZ").classList.toggle("on", sync); });
+$("resetZ").addEventListener("click", () => KEYS.forEach(k => { resetZoom(k); applyZoom(k); }));
+window.addEventListener("resize", () => KEYS.forEach(k => { clampPan(k); applyZoom(k); }));
+
+$("one").addEventListener("change", e => { if (e.target.files.length && pickKey) setFile(pickKey, e.target.files.item(0)); e.target.value = ""; });
+$("pickMany").addEventListener("click", () => $("many").click());
+$("many").addEventListener("change", e => { addMany(e.target.files); e.target.value = ""; });
+$("clearAll").addEventListener("click", resetAll);
+$("again").addEventListener("click", resetAll);
+$("mHeat").addEventListener("click", () => { mode = "heat"; render(); });
+$("mOrig").addEventListener("click", () => { mode = "orig"; render(); });
+
+function resetAll() {
+  if (busy) return;
+  KEYS.forEach(k => { if (thumbs[k]) URL.revokeObjectURL(thumbs[k]); });
+  files = {}; thumbs = {}; result = null; mode = "heat"; currentReportId = null;
+  KEYS.forEach(resetZoom);
+  if (location.search) history.replaceState(null, "", "/exam");
+  hideErr(); hideInfo(); render();
+}
+
+/* ---------- Analyse ---------- */
+function useResult(d) {
+  const done = KEYS.filter(k => d.views && d.views[k]);
+  done.sort((a, b) => d.views[b].score - d.views[a].score);
+  d.top = done.length ? done.at(0) : null;
+  result = d; mode = "heat";
+  KEYS.forEach(resetZoom);
+  fillResults();
+}
+
+$("go").addEventListener("click", async () => {
+  const total = Object.values(files).reduce((a, f) => a + f.size, 0);
+  if (total > MAX_TOTAL_MB * 1048576) { showErr(`Total upload is larger than ${MAX_TOTAL_MB} MB. Use JPG/PNG exports or fewer views.`); return; }
+  busy = true; hideErr(); render();
+  setText("ovTxt", `Analysing ${Object.keys(files).length} view(s)… the first request may take up to a minute.`);
+  $("ov").classList.add("show");
+  try {
+    const fd = new FormData();
+    KEYS.forEach(k => { if (files[k]) fd.append(k, files[k]); });
+    const r = await fetch("/predict4", { method: "POST", body: fd });
+    if (r.status === 401) { location.href = "/?next=" + encodeURIComponent("/exam"); return; }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(typeof d.detail === "string" ? d.detail : "Analysis failed.");
+    currentReportId = null;
+    useResult(d);
+  } catch (e) {
+    showErr(e.message);
+  } finally {
+    busy = false;
+    $("ov").classList.remove("show");
+    render();
+  }
+});
+
+function setBadge(el, band) {
+  el.className = "badge " + (band || "none");
+  el.textContent = (band && BAND[band]) || "Not uploaded";
+}
+
+function fillResults() {
+  const ex = result.exam || {};
+  $("verdict").className = "verdict " + (ex.band || "low");
+  setText("vIco", ICONS[ex.band] || "");
+  setText("vTitle", ex.title || "");
+  setText("vSub", ex.message || "");
+  setText("ePct", pct(ex.score));
+  setBadge($("eBadge"), ex.band);
+
+  const B = result.breasts || {};
+  setText("bR", B.right ? pct(B.right.score) : "–");
+  setText("bL", B.left ? pct(B.left.score) : "–");
+  setBadge($("bRb"), B.right ? B.right.band : null);
+  setBadge($("bLb"), B.left ? B.left.band : null);
+
+  $("vlist").innerHTML = KEYS.map(k => {
+    const v = viewOf(k);
+    if (!v) return `<div class="vr na"><b>${LABEL[k]}</b><span style="color:var(--muted)">Not uploaded</span><span></span></div>`;
+    return `<div class="vr" data-k="${k}"><b>${LABEL[k]}</b>`
+         + `<div class="mini"><i style="width:${v.score * 100}%;background:${COLOR[v.band]}"></i></div>`
+         + `<span class="s" style="color:${COLOR[v.band]}">${pct(v.score)}</span></div>`;
+  }).join("");
+  document.querySelectorAll(".vr[data-k]").forEach(r => r.addEventListener("click", () => openLb(r.dataset.k)));
+
+  $("legend").innerHTML =
+    `<span><i style="background:var(--high)"></i>High ≥ ${pct(result.high_priority)}</span>`
+  + `<span><i style="background:var(--review)"></i>Review ${pct(result.threshold)} – ${pct(result.high_priority)}</span>`
+  + `<span><i style="background:var(--low)"></i>Low &lt; ${pct(result.threshold)}</span>`;
+
+  $("rptMsg").className = "rpt-msg";
+  setText("rptMsg", "Generated before radiologist review. Marked as pending review.");
+  resetFeedback();
+}
+
+/* ---------- Lightbox ---------- */
+function openLb(key) {
+  const v = viewOf(key);
+  if (!v) return;
+  $("lbImg").src = (mode === "heat" && v.heatmap) ? v.heatmap : v.preview;
+  setText("lbCap", `${LABEL[key]} · ${pct(v.score)} · ${BAND[v.band]}  (click or Esc to close)`);
+  $("lb").classList.add("show");
+}
+$("lb").addEventListener("click", () => $("lb").classList.remove("show"));
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("lb").classList.remove("show"); });
+
+/* ---------- PDF report ---------- */
+let rptBusy = false;
+async function downloadReport() {
+  if (!result || rptBusy) return;
+  rptBusy = true;
+  const btns = [$("rptBtn"), $("rptTop")];
+  btns.forEach(b => { b.disabled = true; });
+  const oldSide = $("rptBtn").innerHTML, oldTop = $("rptTop").innerHTML;
+  $("rptBtn").textContent = "Generating PDF…"; $("rptTop").textContent = "Generating…";
+  $("rptMsg").className = "rpt-msg"; setText("rptMsg", "This can take a few seconds.");
+  try {
+    const payload = {
+      case_ref: $("caseRef").value.trim(),
+      include_original: $("rptOrig").checked,
+      views: result.views, breasts: result.breasts, exam: result.exam,
+      threshold: result.threshold, high_priority: result.high_priority
+    };
+    const r = await fetch("/api/report4", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    if (r.status === 401) { location.href = "/?next=" + encodeURIComponent("/exam"); return; }
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      throw new Error(typeof d.detail === "string" ? d.detail : "Could not create the PDF.");
+    }
+    const blob = await r.blob();
+    currentReportId = r.headers.get("X-Report-Id") || currentReportId;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "MammoScan_Report_" + (currentReportId || "exam") + ".pdf";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    setText("rptMsg", "Report " + (currentReportId || "") + " downloaded.");
+  } catch (e) {
+    $("rptMsg").className = "rpt-msg bad"; setText("rptMsg", e.message);
+  } finally {
+    rptBusy = false;
+    $("rptBtn").innerHTML = oldSide; $("rptTop").innerHTML = oldTop;
+    btns.forEach(b => { b.disabled = !result; });
+  }
+}
+$("rptBtn").addEventListener("click", downloadReport);
+$("rptTop").addEventListener("click", downloadReport);
+
+/* ---------- Radiologist review ---------- */
+let fbVerdict = null, reviewId = null;
+const newId = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+  : Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+function fbMsg(kind, t) { $("fbMsg").className = "fb-msg " + kind; $("fbMsg").textContent = t; }
+function checkFb() { $("fbSave").disabled = !(fbVerdict && $("fbName").value.trim()); }
+function setFbOpen(open) {
+  $("fbBox").classList.toggle("open", open);
+  $("fbToggle").setAttribute("aria-expanded", open ? "true" : "false");
+}
+$("fbToggle").addEventListener("click", () => setFbOpen(!$("fbBox").classList.contains("open")));
+$("fbToggle").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("fbToggle").click(); } });
+
+function resetFeedback() {
+  reviewId = newId(); fbVerdict = null;
+  document.querySelectorAll(".ag").forEach(b => b.classList.remove("on"));
+  document.querySelectorAll("#vchk span").forEach(s => s.classList.remove("on"));
+  $("fbFinding").value = ""; $("fbDensity").value = ""; $("fbNote").value = "";
+  $("fbName").value = localStorage.getItem("mammo_reviewer") || "";
+  setText("fbStatus", "Not reviewed"); $("fbStatus").className = "fb-status";
+  setText("fbSave", "Submit review");
+  fbMsg("", "Select agree / disagree and enter your name.");
+  setFbOpen(false);
+  checkFb();
+}
+document.querySelectorAll(".ag").forEach(b => b.addEventListener("click", () => {
+  fbVerdict = b.dataset.v;
+  document.querySelectorAll(".ag").forEach(x => x.classList.toggle("on", x === b));
+  checkFb();
+}));
+document.querySelectorAll("#vchk span").forEach(s => s.addEventListener("click", () => s.classList.toggle("on")));
+$("fbName").addEventListener("input", checkFb);
+
+$("fbSave").addEventListener("click", async () => {
+  if (!result) return;
+  $("fbSave").disabled = true; fbMsg("", "Saving…");
+  const marked = Array.from(document.querySelectorAll("#vchk span.on")).map(s => LABEL[s.dataset.k]).join(", ");
+  const aiViews = KEYS.filter(k => viewOf(k)).map(k => `${LABEL[k]} ${pct(viewOf(k).score)}`).join("; ");
+  try {
+    const r = await fetch("/api/feedback", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        review_id: reviewId,
+        file_name: currentReportId ? "4-view exam " + currentReportId : "4-view exam",
+        report_id: currentReportId || "",
+        ai_score: result.exam.score, ai_band: result.exam.band,
+        threshold: result.threshold, high_priority: result.high_priority,
+        verdict: fbVerdict, birads: $("fbFinding").value, density: $("fbDensity").value,
+        abnormal_views: marked, ai_views: aiViews,
+        reviewer: $("fbName").value.trim(), comment: $("fbNote").value.trim()
+      })
+    });
+    if (r.status === 401) { location.href = "/?next=" + encodeURIComponent(location.pathname + location.search); return; }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(typeof d.detail === "string" ? d.detail : "Could not save the review.");
+    localStorage.setItem("mammo_reviewer", $("fbName").value.trim());
+    setText("fbStatus", "Reviewed ✓"); $("fbStatus").className = "fb-status done";
+    setText("fbSave", "Update review");
+    fbMsg("ok", "Saved " + d.saved_at);
+  } catch (e) { fbMsg("bad", e.message); }
+  finally { checkFb(); }
+});
+
+render();
+
+/* ---------- Open a case from a PDF report link (/exam?report=...) ---------- */
+(async () => {
+  const rid = new URLSearchParams(location.search).get("report");
+  if (!rid) return;
+  setText("ovTxt", "Loading case " + rid + "…");
+  $("ov").classList.add("show");
+  try {
+    const r = await fetch("/api/case/" + encodeURIComponent(rid));
+    if (r.status === 401) { location.href = "/?next=" + encodeURIComponent("/exam?report=" + rid); return; }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(typeof d.detail === "string" ? d.detail : "Could not open this case.");
+    useResult(d);
+    currentReportId = d.report_id || rid;
+    $("caseRef").value = d.case_ref || "";
+    setText("rptMsg", "Opened from report " + currentReportId + ".");
+    showInfo("Case " + currentReportId + (d.case_ref ? " (" + d.case_ref + ")" : "") + " · created " + (d.created_at || ""));
+    render();
+    setFbOpen(true);
+    $("fbBox").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    showErr(e.message);
+  } finally {
+    $("ov").classList.remove("show");
+  }
+})();
+</script>
+</body>
+</html>

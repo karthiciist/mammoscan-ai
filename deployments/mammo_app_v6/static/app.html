@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MammoScan AI | Leya Art Ntelznx Private Limited</title>
+<style>
+  :root{
+    --bg:#fdf6f9; --card:#fff; --ink:#1d2939; --muted:#667085;
+    --brand:#e75480; --brand-deep:#c2185b; --brand-light:#f48fb1; --brand-2:#57585c;
+    --low:#12b76a; --review:#f79009; --high:#d92d20; --line:#f3e1e8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+  .wrap{max-width:1140px;margin:0 auto;width:100%}
+
+  /* Top bar */
+  .topbar{background:#fff;border-bottom:1px solid var(--line);box-shadow:0 1px 4px rgba(16,24,40,.05)}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px}
+  .topbar img{height:32px;width:auto;max-width:55vw;display:block}
+  .topbar .right{display:flex;align-items:center;gap:16px}
+  .topbar .tag{font-size:12px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+  .signout{font-size:13px;font-weight:600;color:var(--brand);text-decoration:none;border:1.5px solid var(--brand);padding:6px 14px;border-radius:999px;white-space:nowrap}
+  .signout:hover{background:var(--brand);color:#fff}
+  @media(max-width:720px){.topbar .tag{display:none}.topbar img{height:22px}}
+
+  /* Banner */
+  header{background:linear-gradient(120deg,var(--brand-light),var(--brand) 50%,var(--brand-deep));color:#fff;padding:18px 0 22px}
+  header .wrap{padding:0 24px}
+  header h1{font-size:22px;font-weight:700;letter-spacing:.2px}
+  header p{opacity:.95;margin-top:3px;font-size:14px}
+
+  main{padding:24px 24px 8px;flex:1;display:flex;flex-direction:column;gap:20px}
+  .card{background:var(--card);border-radius:18px;box-shadow:0 10px 30px rgba(194,24,91,.08)}
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .card-h h2{font-size:16px}
+
+  /* ---------- Upload bar ---------- */
+  .upload{padding:16px;display:flex;align-items:center;gap:14px}
+  .drop{flex:1;min-width:0;display:flex;align-items:center;gap:14px;padding:14px 18px;border:2px dashed #e8c3d2;border-radius:14px;background:#fffafc;cursor:pointer;transition:border-color .2s,background .2s;user-select:none}
+  .drop:hover,.drop.drag{border-color:var(--brand);background:#fdeef4}
+  .drop:focus-visible{outline:3px solid #f8bbd0;outline-offset:2px}
+  .drop .ic{width:44px;height:44px;border-radius:12px;background:#fdeef4;color:var(--brand);display:grid;place-items:center;flex-shrink:0}
+  .drop .txt{min-width:0}
+  .drop .t{display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .drop .s{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+  .drop.has .ic{background:var(--brand);color:#fff}
+  .drop .x{margin-left:auto;flex-shrink:0;display:none;border:none;background:#fff;border:1px solid var(--line);color:var(--muted);width:30px;height:30px;border-radius:50%;font-size:18px;line-height:1;cursor:pointer}
+  .drop .x:hover{color:var(--high);border-color:#fecdca}
+  .drop.has .x{display:block}
+  #input{display:none}
+  button.go{flex-shrink:0;padding:0 28px;height:56px;border:none;border-radius:14px;font-size:15px;font-weight:600;color:#fff;background:linear-gradient(120deg,var(--brand),var(--brand-deep));cursor:pointer;transition:.2s;display:flex;align-items:center;gap:10px;white-space:nowrap}
+  button.go:disabled{opacity:.45;cursor:not-allowed}
+  button.go:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(231,84,128,.35)}
+  .mini-spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;display:none}
+  button.go.busy .mini-spin{display:block}
+  @media(max-width:720px){.upload{flex-direction:column;align-items:stretch}button.go{justify-content:center}}
+  .err{display:none;padding:12px 16px;border-radius:12px;background:#fef3f2;color:#b42318;font-size:14px;border:1px solid #fecdca}
+  .err.show{display:block}
+
+  /* ---------- Placeholder / loading ---------- */
+  .placeholder{padding:44px 24px;text-align:center;color:var(--muted)}
+  .placeholder .big-ic{width:64px;height:64px;border-radius:18px;background:#fdeef4;color:var(--brand);display:grid;place-items:center;margin:0 auto 14px}
+  .placeholder h3{color:var(--ink);font-size:17px;margin-bottom:6px}
+  .placeholder p{font-size:14px;max-width:520px;margin:0 auto}
+  .steps{display:flex;justify-content:center;gap:12px;margin-top:22px;flex-wrap:wrap}
+  .step{display:flex;align-items:center;gap:8px;background:#fffafc;border:1px solid var(--line);padding:8px 14px;border-radius:999px;font-size:13px;color:var(--ink)}
+  .step b{width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;display:grid;place-items:center}
+  .spinner{width:46px;height:46px;border:4px solid #f6dce6;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 14px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- Results ---------- */
+  .results{display:none;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:stretch}
+  .results.show{display:grid;animation:fade .4s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+  @media(max-width:900px){.results{grid-template-columns:1fr}}
+  .results .card{padding:22px;display:flex;flex-direction:column}
+
+  /* Image viewer */
+  .toggle{display:inline-flex;background:#fdeef4;border-radius:999px;padding:3px}
+  .toggle button{border:none;background:none;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;color:var(--brand-deep);cursor:pointer}
+  .toggle button.on{background:var(--brand);color:#fff}
+  .viewer{flex:1;min-height:360px;background:#0b0b0f;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .viewer img{max-width:100%;max-height:480px;display:block}
+  .cap{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+
+  /* Verdict */
+  .verdict{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1px solid transparent}
+  .verdict .ico{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:18px;font-weight:800;flex-shrink:0}
+  .verdict b{font-size:17px;display:block}
+  .verdict small{opacity:.9;font-size:13px;display:block;margin-top:2px;line-height:1.4}
+  .verdict.low{background:#ecfdf3;color:#05603a;border-color:#abefc6}.verdict.low .ico{background:var(--low)}
+  .verdict.review{background:#fffaeb;color:#93370d;border-color:#fedf89}.verdict.review .ico{background:var(--review)}
+  .verdict.high{background:#fef3f2;color:#912018;border-color:#fecdca}.verdict.high .ico{background:var(--high)}
+
+  /* Score */
+  .scorebox{margin-top:20px;padding:18px;border:1px solid var(--line);border-radius:14px}
+  .score{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+  .score .lbl{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .score .big{font-size:36px;font-weight:800;line-height:1}
+  .badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:999px;color:#fff}
+  .badge.low{background:var(--low)}.badge.review{background:var(--review)}.badge.high{background:var(--high)}
+  .bar{position:relative;height:14px}
+  .bar .zones{position:absolute;inset:0;border-radius:99px}
+  .needle{position:absolute;top:-6px;width:4px;height:26px;background:var(--ink);border-radius:4px;transition:left .8s ease;box-shadow:0 0 0 2px #fff}
+  .mark{position:absolute;top:-3px;height:20px;border-left:2px dashed #344054}
+  .ticks{position:relative;height:16px;font-size:11px;color:var(--muted);margin-top:6px}
+  .ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+
+  /* Band guide (fills remaining height) */
+  /* .guide{margin-top:16px;flex:1;display:flex;flex-direction:column;gap:8px}
+  .guide h4{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+  .gr{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);font-size:13px;opacity:.55;transition:.2s}
+  .gr i{width:12px;height:12px;border-radius:4px;flex-shrink:0;margin-top:3px}
+  .gr b{display:block;font-size:13.5px}
+  .gr span{color:var(--muted)}
+  .gr.active{opacity:1;border-color:currentColor;box-shadow:0 2px 10px rgba(16,24,40,.06)}
+  .gr.low.active{color:var(--low);background:#f6fef9}.gr.review.active{color:var(--review);background:#fffcf5}.gr.high.active{color:var(--high);background:#fffbfa}
+  .gr.active b{color:var(--ink)} */
+    /* Band guide – compact, side by side */
+  .guide{margin-top:16px}
+  .guide h4,.fb-h h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .guide h4{margin-bottom:8px}
+  .gl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .gr{padding:9px 10px;border-radius:12px;border:1px solid var(--line);font-size:12px;opacity:.5;transition:.2s}
+  .gr .h{display:flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;color:var(--ink);white-space:nowrap}
+  .gr i{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  .gr .r{font-weight:700;font-size:12px;margin-top:3px}
+  .gr span{display:block;color:var(--muted);margin-top:2px;line-height:1.35}
+  .gr.active{opacity:1;border-color:currentColor;box-shadow:0 2px 10px rgba(16,24,40,.06)}
+  .gr.low.active{color:var(--low);background:#f6fef9}
+  .gr.review.active{color:var(--review);background:#fffcf5}
+  .gr.high.active{color:var(--high);background:#fffbfa}
+
+  /* Radiologist review */
+  .fb{margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:14px;background:#fffafc}
+  .fb-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .fb-status{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:#f2f4f7;color:#475467}
+  .fb-status.done{background:#ecfdf3;color:#05603a}
+  .agree{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .ag{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;transition:.15s}
+  .ag:hover{border-color:var(--brand)}
+  .ag.on[data-v=agree]{border-color:var(--low);background:#ecfdf3;color:#05603a}
+  .ag.on[data-v=disagree]{border-color:var(--high);background:#fef3f2;color:#912018}
+  .fb-row{display:grid;grid-template-columns:1.4fr 1fr;gap:10px;margin-bottom:10px}
+  .fb label{display:block;font-size:12px;font-weight:600;color:var(--muted)}
+  .fb select,.fb input,.fb textarea{width:100%;margin-top:4px;padding:9px 10px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;color:var(--ink);background:#fff}
+  .fb textarea{margin-top:0;resize:vertical}
+  .fb select:focus,.fb input:focus,.fb textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(231,84,128,.12)}
+  .fb-act{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}
+  .fb-msg{font-size:12.5px;color:var(--muted)} .fb-msg.ok{color:#05603a} .fb-msg.bad{color:#b42318}
+  .fb-save{border:none;color:#fff;background:linear-gradient(120deg,var(--brand),var(--brand-deep));font-weight:600;font-size:13.5px;padding:9px 18px;border-radius:10px;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .fb-save:disabled{opacity:.45;cursor:not-allowed}
+  @media(max-width:560px){.gl,.fb-row{grid-template-columns:1fr}}
+
+  .again{margin-top:14px;align-self:flex-end;border:1.5px solid var(--brand);background:#fff;color:var(--brand);font-weight:600;font-size:13px;padding:8px 16px;border-radius:999px;cursor:pointer}
+  .again:hover{background:var(--brand);color:#fff}
+
+  .note{font-size:12.5px;color:var(--muted);text-align:center;line-height:1.6}
+
+  footer{border-top:3px solid var(--brand);background:#fff;margin-top:24px}
+  footer .wrap{padding:20px 24px;font-size:12.5px;color:var(--muted);line-height:1.7}
+  footer b{color:var(--ink)}
+  footer .copy{margin-top:8px;font-size:12px;color:var(--brand-2)}
+
+  .card-h h2{display:flex;align-items:center;gap:8px}
+  .card-h h2 svg{color:var(--brand);flex-shrink:0}
+
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <img src="/static/logo.jpeg" alt="Leya Art Ntelznx Private Limited">
+  <!-- <div class="right">
+    <span class="tag">Proprietary Clinical AI Platform</span>
+    <a class="signout" href="/logout">Sign out</a>
+  </div> -->
+  <nav style="display:flex;gap:4px;background:#fdeef4;padding:4px;border-radius:999px">
+    <a href="/app" style="font-size:13px;font-weight:600;text-decoration:none;padding:7px 14px;border-radius:999px;background:var(--brand);color:#fff">Single analysis</a>
+    <!-- <a href="/exam" style="font-size:13px;font-weight:600;text-decoration:none;padding:7px 14px;border-radius:999px;background:var(--brand);color:#fff">4-view exam</a> -->
+    <a href="/exam" style="font-size:13px;font-weight:600;text-decoration:none;padding:7px 14px;border-radius:999px;color:var(--brand-deep)">4-view exam</a>
+    <a href="/bulk" style="font-size:13px;font-weight:600;text-decoration:none;padding:7px 14px;border-radius:999px;color:var(--brand-deep)">Bulk analysis</a>
+    <a href="/settings" style="font-size:13px;font-weight:600;text-decoration:none;padding:7px 14px;border-radius:999px;color:var(--brand-deep)">Settings</a>
+  </nav>
+  <a class="signout" href="/logout">Sign out</a>
+</div></div>
+
+<header><div class="wrap">
+  <h1>MammoScan AI</h1>
+  <p>AI-assisted mammogram screening – upload an image to receive an instant risk assessment.</p>
+</div></header>
+
+<main class="wrap">
+
+  <!-- Upload bar -->
+  <section class="card upload">
+    <div class="drop" id="drop" role="button" tabindex="0" aria-label="Upload mammogram">
+      <div class="ic">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+      </div>
+      <div class="txt">
+        <span class="t" id="dropT">Drag &amp; drop a mammogram or click to browse</span>
+        <span class="s" id="dropS">DICOM, PNG, JPG or TIFF · max 30 MB</span>
+      </div>
+      <button class="x" id="clear" title="Remove file" type="button">×</button>
+    </div>
+    <input type="file" id="input" accept=".dcm,.png,.jpg,.jpeg,.tif,.tiff">
+    <button class="go" id="go" type="button" disabled><span class="mini-spin"></span><span id="goTxt">Analyze image</span></button>
+  </section>
+
+  <div class="err" id="err"></div>
+
+  <!-- Empty state -->
+  <section class="card placeholder" id="empty">
+    <div class="big-ic">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 15c1.5-4 6.5-4 8 0"/><circle cx="12" cy="9" r="1.5"/></svg>
+    </div>
+    <h3>No image analysed yet</h3>
+    <p>Upload a mammogram above. The result will appear here with a risk score, a priority band and the processed image.</p>
+    <div class="steps">
+      <div class="step"><b>1</b>Upload image</div>
+      <div class="step"><b>2</b>Analyze</div>
+      <div class="step"><b>3</b>Review result</div>
+    </div>
+  </section>
+
+  <!-- Loading -->
+  <section class="card placeholder" id="loading" style="display:none">
+    <div class="spinner"></div>
+    <h3>Analysing image…</h3>
+    <p>The first request after a quiet period may take up to 30 seconds.</p>
+  </section>
+
+  <!-- Results -->
+  <section class="results" id="results">
+    <div class="card">
+      <div class="card-h">
+        <!-- <h2>🩻 Image</h2> -->
+        <h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>Image</h2>
+        <div class="toggle" id="toggle">
+          <button type="button" id="btnHeat" class="on">Heat map</button>
+          <button type="button" id="btnOrig">Original</button>
+        </div>
+      </div>
+      <div class="viewer"><img id="prev" alt="Processed mammogram"></div>
+      <div class="cap" id="cap">Processed image as analysed by the model</div>
+    </div>
+
+    <div class="card">
+      <!-- <div class="card-h"><h2>📊 Assessment</h2></div> -->
+      <div class="card-h"><h2><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/></svg>Assessment</h2></div>
+
+      <div class="verdict" id="verdict">
+        <div class="ico" id="vIco"></div>
+        <div><b id="vTitle"></b><small id="vSub"></small></div>
+      </div>
+
+      <div class="scorebox">
+        <div class="score">
+          <span class="lbl">Abnormality score <span class="badge" id="badge"></span></span>
+          <span class="big" id="pct">0%</span>
+        </div>
+        <div class="bar">
+          <div class="zones" id="zones"></div>
+          <div class="mark" id="markReview"></div>
+          <div class="mark" id="markHigh"></div>
+          <div class="needle" id="needle" style="left:0"></div>
+        </div>
+        <div class="ticks">
+          <span style="left:0;transform:none">0%</span>
+          <span id="tickReview"></span>
+          <span id="tickHigh"></span>
+          <span style="right:0;left:auto;transform:none">100%</span>
+        </div>
+      </div>
+
+      <!-- <div class="guide">
+        <h4>How to read this result</h4>
+        <div class="gr high" id="gHigh"><i style="background:var(--high)"></i><div><b>High priority (<span id="gHighR"></span>)</b><span>Review this case first.</span></div></div>
+        <div class="gr review" id="gReview"><i style="background:var(--review)"></i><div><b>Review (<span id="gRevR"></span>)</b><span>Above the screening threshold; radiologist review recommended.</span></div></div>
+        <div class="gr low" id="gLow"><i style="background:var(--low)"></i><div><b>Low suspicion (<span id="gLowR"></span>)</b><span>Below the threshold; routine reading still required.</span></div></div>
+      </div> -->
+      <div class="guide">
+        <h4>How to read this result</h4>
+        <div class="gl">
+          <div class="gr high" id="gHigh"><div class="h"><i style="background:var(--high)"></i>High priority</div><div class="r" id="gHighR"></div><span>Review first</span></div>
+          <div class="gr review" id="gReview"><div class="h"><i style="background:var(--review)"></i>Review</div><div class="r" id="gRevR"></div><span>Radiologist review recommended</span></div>
+          <div class="gr low" id="gLow"><div class="h"><i style="background:var(--low)"></i>Low suspicion</div><div class="r" id="gLowR"></div><span>Routine reading still required</span></div>
+        </div>
+      </div>
+
+      <div class="fb" id="fb">
+        <div class="fb-h"><h4>Radiologist review</h4><span class="fb-status" id="fbStatus">Not reviewed</span></div>
+        <div class="agree">
+          <button type="button" class="ag" data-v="agree">✓ Agree with AI</button>
+          <button type="button" class="ag" data-v="disagree">✕ Disagree</button>
+        </div>
+        <div class="fb-row">
+          <label>Radiologist assessment
+            <select id="fbFinding">
+              <option value="">Select (optional)…</option>
+              <option>BI-RADS 0 – Incomplete, needs additional imaging</option>
+              <option>BI-RADS 1 – Negative</option>
+              <option>BI-RADS 2 – Benign</option>
+              <option>BI-RADS 3 – Probably benign</option>
+              <option>BI-RADS 4 – Suspicious</option>
+              <option>BI-RADS 5 – Highly suggestive of malignancy</option>
+            </select>
+          </label>
+          <label>Reviewer<input id="fbName" placeholder="Name or ID" maxlength="80"></label>
+        </div>
+        <textarea id="fbNote" rows="2" maxlength="2000" placeholder="Comments (optional) – do not enter patient identifiers"></textarea>
+        <div class="fb-act">
+          <span class="fb-msg" id="fbMsg"></span>
+          <button type="button" class="fb-save" id="fbSave" disabled>Submit review</button>
+        </div>
+      </div>
+
+      <button class="again" id="again" type="button">↺ New analysis</button>
+    </div>
+  </section>
+
+  <p class="note">⚕️ This tool is a decision-support aid and does not provide a diagnosis. All results, including low-suspicion cases, must be reviewed by a qualified radiologist. Use de-identified images only.</p>
+</main>
+
+<footer><div class="wrap">
+  <p><b>Proprietary Notice.</b> MammoScan AI is a proprietary tool owned and developed by Leya Art Ntelznx Private Limited.
+  The software, its underlying models, algorithms, user interface and associated documentation constitute the confidential
+  intellectual property of the Company. Access is granted solely to authorised users for approved purposes. Any unauthorised use,
+  reproduction, duplication, distribution, modification, reverse engineering or disclosure, in whole or in part, is strictly
+  prohibited and may result in legal action.</p>
+  <p class="copy">© <span id="yr"></span> Leya Art Ntelznx Private Limited. All rights reserved.</p>
+</div></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+$("yr").textContent = new Date().getFullYear();
+const input = $("input"), drop = $("drop");
+let file = null, imgs = { heat: null, orig: null };
+const ICONS  = { low: "✓", review: "!", high: "!!" };
+const BADGES = { low: "Low", review: "Review", high: "High priority" };
+const pct = v => Math.round(v * 100) + "%";
+
+/* ---------- Bands ---------- */
+function drawBands(t, h){
+  const a = (t*100).toFixed(2), b = (h*100).toFixed(2);
+  $("zones").style.background =
+    `linear-gradient(90deg, var(--low) 0 ${a}%, var(--review) ${a}% ${b}%, var(--high) ${b}% 100%)`;
+  $("markReview").style.left = a + "%";  $("markHigh").style.left = b + "%";
+  $("tickReview").style.left = a + "%";  $("tickReview").textContent = pct(t);
+  $("tickHigh").style.left   = b + "%";  $("tickHigh").textContent   = pct(h);
+  $("gHighR").textContent = "≥ " + pct(h);
+  $("gRevR").textContent  = pct(t) + " – " + pct(h);
+  $("gLowR").textContent  = "< " + pct(t);
+}
+fetch("/config").then(r => { if (r.status === 401) { location.href = "/"; return; } return r.json(); })
+  .then(c => c && drawBands(c.threshold, c.high_priority)).catch(() => {});
+
+/* ---------- File selection ---------- */
+function setFile(f){
+  file = f || null;
+  drop.classList.toggle("has", !!f);
+  $("dropT").textContent = f ? f.name : "Drag & drop a mammogram or click to browse";
+  $("dropS").textContent = f ? `${(f.size/1048576).toFixed(1)} MB · ready to analyse` : "DICOM, PNG, JPG or TIFF · max 30 MB";
+  $("go").disabled = !f;
+  $("err").classList.remove("show");
+}
+drop.addEventListener("click", e => { if (e.target.id !== "clear") input.click(); });
+drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); } });
+input.addEventListener("change", e => setFile(e.target.files[0]));
+$("clear").addEventListener("click", e => { e.stopPropagation(); input.value = ""; setFile(null); });
+["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); }));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); }));
+drop.addEventListener("drop", e => { if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); });
+
+/* ---------- View states ---------- */
+function view(state){   // "empty" | "loading" | "results"
+  $("empty").style.display   = state === "empty"   ? "block" : "none";
+  $("loading").style.display = state === "loading" ? "block" : "none";
+  $("results").classList.toggle("show", state === "results");
+}
+
+/* ---------- Analyse ---------- */
+$("go").addEventListener("click", async () => {
+  if (!file) return;
+  $("go").disabled = true; $("go").classList.add("busy"); $("goTxt").textContent = "Analysing…";
+  $("err").classList.remove("show"); view("loading");
+  try {
+    const fd = new FormData(); fd.append("file", file);
+    const r = await fetch("/predict", { method: "POST", body: fd });
+    if (r.status === 401) { location.href = "/"; return; }
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || "Analysis failed.");
+    show(d);
+  } catch (e) {
+    $("err").textContent = "⚠️ " + e.message; $("err").classList.add("show"); view("empty");
+  } finally {
+    $("go").disabled = !file; $("go").classList.remove("busy"); $("goTxt").textContent = "Analyze image";
+  }
+});
+
+/* ---------- Image toggle ---------- */
+function setImage(which){
+  $("btnHeat").classList.toggle("on", which === "heat");
+  $("btnOrig").classList.toggle("on", which === "orig");
+  $("prev").src = imgs[which] || imgs.orig || "";
+  $("cap").textContent = which === "heat"
+    ? "Heat map: warmer areas influenced the model's score most"
+    : "Processed image as analysed by the model";
+}
+$("btnHeat").addEventListener("click", () => setImage("heat"));
+$("btnOrig").addEventListener("click", () => setImage("orig"));
+
+/* ---------- Render result ---------- */
+function show(d){
+  const p = d.abnormal_probability, band = d.band;
+  drawBands(d.threshold, d.high_priority);
+
+  $("verdict").className = "verdict " + band;
+  $("vIco").textContent  = ICONS[band];
+  $("vTitle").textContent = d.title;
+  $("vSub").textContent   = d.message;
+  $("badge").className   = "badge " + band;
+  $("badge").textContent = BADGES[band];
+  $("pct").textContent   = (p*100).toFixed(1) + "%";
+
+  ["gHigh","gReview","gLow"].forEach(id => $(id).classList.remove("active"));
+  $({ high:"gHigh", review:"gReview", low:"gLow" }[band]).classList.add("active");
+
+  imgs.orig = d.preview || null;
+  imgs.heat = d.heatmap || null;          // <-- change "heatmap" if your API uses a different key
+  $("toggle").style.display = imgs.heat ? "inline-flex" : "none";
+  setImage(imgs.heat ? "heat" : "orig");
+
+  $("needle").style.left = "0%";
+  last = { id: newId(), file: file ? file.name : "", score: d.abnormal_probability,
+           band: d.band, threshold: d.threshold, high: d.high_priority };
+  resetFeedback();
+  view("results");
+  setTimeout(() => $("needle").style.left = `calc(${p*100}% - 2px)`, 60);
+  $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+$("again").addEventListener("click", () => {
+  input.value = ""; setFile(null); view("empty");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+/* ---------- Radiologist review ---------- */
+let last = null, fbVerdict = null;
+const newId = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+  : Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+function fbMsg(kind, t){ $("fbMsg").className = "fb-msg " + kind; $("fbMsg").textContent = t; }
+function checkFb(){ $("fbSave").disabled = !(fbVerdict && $("fbName").value.trim()); }
+
+function resetFeedback(){
+  fbVerdict = null;
+  document.querySelectorAll(".ag").forEach(b => b.classList.remove("on"));
+  $("fbFinding").value = ""; $("fbNote").value = "";
+  $("fbName").value = localStorage.getItem("mammo_reviewer") || "";
+  $("fbStatus").textContent = "Not reviewed"; $("fbStatus").className = "fb-status";
+  $("fbSave").textContent = "Submit review";
+  fbMsg("", "Select agree / disagree and enter your name.");
+  checkFb();
+}
+
+document.querySelectorAll(".ag").forEach(b => b.addEventListener("click", () => {
+  fbVerdict = b.dataset.v;
+  document.querySelectorAll(".ag").forEach(x => x.classList.toggle("on", x === b));
+  checkFb();
+}));
+$("fbName").addEventListener("input", checkFb);
+
+$("fbSave").addEventListener("click", async () => {
+  if (!last) return;
+  $("fbSave").disabled = true; fbMsg("", "Saving…");
+  try {
+    const r = await fetch("/api/feedback", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        review_id: last.id, file_name: last.file, ai_score: last.score, ai_band: last.band,
+        threshold: last.threshold, high_priority: last.high,
+        verdict: fbVerdict, birads: $("fbFinding").value,
+        reviewer: $("fbName").value.trim(), comment: $("fbNote").value.trim()
+      })
+    });
+    if (r.status === 401) { location.href = "/"; return; }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(typeof d.detail === "string" ? d.detail : "Could not save the review.");
+    localStorage.setItem("mammo_reviewer", $("fbName").value.trim());
+    $("fbStatus").textContent = "Reviewed ✓"; $("fbStatus").className = "fb-status done";
+    $("fbSave").textContent = "Update review";
+    fbMsg("ok", "Saved " + d.saved_at);
+  } catch (e) { fbMsg("bad", e.message); }
+  finally { checkFb(); }
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in | MammoScan AI</title>
+<style>
+  :root{
+    --bg:#fdf6f9; --card:#fff; --ink:#1d2939; --muted:#667085;
+    --brand:#e75480; --brand-deep:#c2185b; --brand-light:#f48fb1; --brand-2:#57585c;
+    --warn:#f04438; --line:#f3e1e8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr;background:var(--bg);color:var(--ink)}
+  @media(max-width:860px){body{grid-template-columns:1fr}.side{display:none}}
+
+  /* Left brand panel */
+  .side{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--brand-light),var(--brand) 50%,var(--brand-deep));color:#fff;padding:56px;display:flex;flex-direction:column;justify-content:space-between}
+  .side::before,.side::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.10)}
+  .side::before{width:420px;height:420px;right:-140px;top:-120px}
+  .side::after{width:300px;height:300px;left:-100px;bottom:-110px}
+  .side>*{position:relative;z-index:1}
+  .side h1{font-size:40px;font-weight:700;letter-spacing:.3px}
+  .side .lead{margin-top:14px;font-size:17px;opacity:.95;max-width:420px;line-height:1.55}
+  .feats{margin-top:36px;display:grid;gap:14px}
+  .feat{display:flex;align-items:center;gap:12px;font-size:15px}
+  .feat i{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-style:normal}
+  .side small{opacity:.85;font-size:12px}
+
+  /* Right form panel */
+  .main{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px}
+  .card{width:100%;max-width:400px;background:var(--card);border-radius:20px;box-shadow:0 14px 40px rgba(194,24,91,.10);padding:40px 36px;border-top:4px solid var(--brand)}
+  .logo{height:34px;width:auto;max-width:100%;display:block;margin:0 auto 26px}
+  .card h2{font-size:22px;text-align:center}
+  .card .sub{text-align:center;color:var(--muted);font-size:14px;margin:6px 0 28px}
+  label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  .field{position:relative;margin-bottom:18px}
+  .field svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#b8a3ad;pointer-events:none}
+  input{width:100%;padding:13px 44px 13px 42px;border:1.5px solid var(--line);border-radius:12px;font-size:15px;font-family:inherit;color:var(--ink);background:#fffafc;transition:border-color .2s,box-shadow .2s,background .2s}
+  input:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 4px rgba(231,84,128,.15)}
+  .eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:#b8a3ad;padding:6px;font-size:13px;font-weight:600}
+  .eye:hover{color:var(--brand)}
+  button.go{width:100%;margin-top:6px;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:600;color:#fff;background:linear-gradient(120deg,var(--brand),var(--brand-deep));cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:10px}
+  button.go:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 20px rgba(231,84,128,.35)}
+  button.go:disabled{opacity:.6;cursor:not-allowed}
+  .spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:s 1s linear infinite;display:none}
+  button.go.busy .spin{display:block}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .err{display:none;margin-bottom:16px;padding:11px 14px;border-radius:10px;background:#fef3f2;color:#b42318;font-size:13.5px}
+  .err.show{display:block;animation:shake .35s}
+  @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .foot{margin-top:24px;font-size:12px;color:var(--muted);text-align:center;max-width:400px;line-height:1.6}
+</style>
+</head>
+<body>
+  <aside class="side">
+    <div>
+      <h1>MammoScan AI</h1>
+      <p class="lead">AI-assisted mammogram screening that helps radiologists prioritise cases with an instant risk assessment.</p>
+      <div class="feats">
+        <div class="feat"><i>⚡</i>Instant abnormality scoring</div>
+        <div class="feat"><i>🩻</i>Supports DICOM, PNG, JPG &amp; TIFF</div>
+        <div class="feat"><i>🔒</i>Secure, authorised access only</div>
+      </div>
+    </div>
+    <small>Proprietary Clinical AI Platform · Leya Art Ntelznx Private Limited</small>
+  </aside>
+
+  <main class="main">
+    <form class="card" id="form" autocomplete="off">
+      <img class="logo" src="/static/logo.jpeg" alt="Leya Art Ntelznx Private Limited">
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to continue to MammoScan AI</p>
+
+      <div class="err" id="err">Invalid user ID or password.</div>
+
+      <label for="user">User ID</label>
+      <div class="field">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+        <input id="user" name="username" placeholder="Enter your user ID" required autofocus>
+      </div>
+
+      <label for="pwd">Password</label>
+      <div class="field">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <input id="pwd" name="password" type="password" placeholder="Enter your password" required>
+        <button type="button" class="eye" id="eye">Show</button>
+      </div>
+
+      <button class="go" id="go" type="submit"><span class="spin"></span><span id="goTxt">Sign in</span></button>
+    </form>
+    <p class="foot">Authorised users only. All access is logged.<br>© <span id="yr"></span> Leya Art Ntelznx Private Limited.</p>
+  </main>
+
+<script>
+const $ = id => document.getElementById(id);
+$("yr").textContent = new Date().getFullYear();
+$("eye").onclick = () => {
+  const p = $("pwd"), show = p.type === "password";
+  p.type = show ? "text" : "password"; $("eye").textContent = show ? "Hide" : "Show";
+};
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  $("err").classList.remove("show");
+  $("go").disabled = true; $("go").classList.add("busy"); $("goTxt").textContent = "Signing in…";
+  try {
+    const r = await fetch("/login", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({username: $("user").value.trim(), password: $("pwd").value})
+    });
+    // if (r.ok) { location.href = "/app"; return; }
+    if (r.ok) {
+      const nxt = new URLSearchParams(location.search).get("next") || "";
+      location.href = (nxt.startsWith("/") && !nxt.startsWith("//")) ? nxt : "/app";
+      return;
+    }
+    $("err").textContent = r.status === 401 ? "Invalid user ID or password." : "Sign-in failed. Please try again.";
+  } catch { $("err").textContent = "Cannot reach the server. Please try again."; }
+  void $("err").offsetWidth; $("err").classList.add("show");
+  $("pwd").value = ""; $("pwd").focus();
+  $("go").disabled = false; $("go").classList.remove("busy"); $("goTxt").textContent = "Sign in";
+});
+</script>
+
+<footer style="position:fixed;bottom:0;left:0;right:0;padding:10px 16px;background:#fff;border-top:1px solid #f3e1e8;font-size:12px;color:#667085;text-align:center">
+  MammoScan AI is operated by <b>Leya Art Ntelznx Private Limited</b>, Tamil Nadu, India ·
+  Access restricted to authorised clinical staff ·
+  Contact: <a href="mailto:support@leyapharmacz.com" style="color:#c2185b">karthickeyan@leyapharmacz.com</a>
+</footer>
+
+</body>
+</html>

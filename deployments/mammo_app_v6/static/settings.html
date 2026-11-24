@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings | MammoScan AI</title>
+<style>
+  :root{--bg:#fdf6f9;--card:#fff;--ink:#1d2939;--muted:#667085;--brand:#e75480;--brand-deep:#c2185b;--brand-light:#f48fb1;--brand-2:#57585c;--low:#12b76a;--review:#f79009;--high:#d92d20;--line:#f3e1e8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+  .wrap{max-width:1140px;margin:0 auto;width:100%}
+  .topbar{background:#fff;border-bottom:1px solid var(--line);box-shadow:0 1px 4px rgba(16,24,40,.05)}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px}
+  .topbar img{height:32px;width:auto;display:block}
+  .nav{display:flex;gap:4px;background:#fdeef4;padding:4px;border-radius:999px}
+  .nav a{font-size:13px;font-weight:600;color:var(--brand-deep);text-decoration:none;padding:7px 14px;border-radius:999px;white-space:nowrap}
+  .nav a.on{background:var(--brand);color:#fff}
+  .signout{font-size:13px;font-weight:600;color:var(--brand);text-decoration:none;border:1.5px solid var(--brand);padding:6px 14px;border-radius:999px;white-space:nowrap}
+  .signout:hover{background:var(--brand);color:#fff}
+  @media(max-width:820px){.topbar .wrap{flex-wrap:wrap}.topbar img{height:22px}}
+  header{background:linear-gradient(120deg,var(--brand-light),var(--brand) 50%,var(--brand-deep));color:#fff;padding:18px 0 22px}
+  header .wrap{padding:0 24px} header h1{font-size:22px} header p{opacity:.95;margin-top:3px;font-size:14px}
+  main{padding:24px;flex:1;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:20px;align-items:start}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .card{background:var(--card);border-radius:18px;box-shadow:0 10px 30px rgba(194,24,91,.08);padding:24px}
+  h2{font-size:16px;margin-bottom:4px} .sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+  .field{padding:16px;border:1px solid var(--line);border-radius:14px;margin-bottom:14px}
+  .field .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .field label{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+  .field label i{width:12px;height:12px;border-radius:4px}
+  .field .help{font-size:12.5px;color:var(--muted);margin-top:8px}
+  .num{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+  .num input{width:80px;border:none;padding:8px 10px;font-size:15px;font-weight:700;text-align:right;font-family:inherit;color:var(--ink)}
+  .num input:focus{outline:none}
+  .num span{padding:8px 10px;background:#fdeef4;color:var(--brand-deep);font-weight:700;font-size:14px}
+  .num:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px rgba(231,84,128,.15)}
+  input[type=range]{width:100%;accent-color:var(--brand)}
+  .preview{margin-top:6px;padding:16px;background:#fffafc;border-radius:14px;border:1px solid var(--line)}
+  .preview h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+  .bar{position:relative;height:14px;border-radius:99px}
+  .mark{position:absolute;top:-3px;height:20px;border-left:2px dashed #344054}
+  .ticks{position:relative;height:16px;font-size:11px;color:var(--muted);margin-top:6px}
+  .ticks span{position:absolute;transform:translateX(-50%)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;margin-top:10px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+  .actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap}
+  .meta{font-size:12.5px;color:var(--muted)}
+  .btns{display:flex;gap:10px}
+  .btn{border:1.5px solid var(--brand);background:#fff;color:var(--brand);font-weight:600;font-size:14px;padding:10px 18px;border-radius:12px;cursor:pointer}
+  .btn.primary{border:none;color:#fff;background:linear-gradient(120deg,var(--brand),var(--brand-deep))}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .msg{display:none;margin-top:14px;padding:11px 14px;border-radius:12px;font-size:13.5px}
+  .msg.ok{display:block;background:#ecfdf3;color:#05603a;border:1px solid #abefc6}
+  .msg.bad{display:block;background:#fef3f2;color:#b42318;border:1px solid #fecdca}
+  .tips li{font-size:13px;color:#344054;margin:0 0 10px 18px;line-height:1.5}
+  .warn{margin-top:14px;padding:12px 14px;border-radius:12px;background:#fffaeb;border:1px solid #fedf89;color:#93370d;font-size:12.5px;line-height:1.5}
+  footer{border-top:3px solid var(--brand);background:#fff}
+  footer .wrap{padding:16px 24px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <img src="/static/logo.jpeg" alt="Leya Art Ntelznx Private Limited">
+  <nav class="nav"><a href="/app">Single analysis</a><a href="/exam">4-view exam</a><a href="/bulk">Bulk analysis</a><a href="/settings" class="on">Settings</a></nav>
+  <a class="signout" href="/logout">Sign out</a>
+</div></div>
+
+<header><div class="wrap"><h1>Settings</h1><p>Configure how abnormality scores are grouped into priority bands.</p></div></header>
+
+<main class="wrap">
+  <section class="card">
+    <h2>Score thresholds</h2>
+    <p class="sub">Changes apply to all new analyses (single and bulk) within about 30 seconds.</p>
+
+    <div class="field">
+      <div class="top">
+        <label><i style="background:var(--review)"></i>Review threshold</label>
+        <div class="num"><input id="nRev" type="number" min="1" max="98" step="0.5"><span>%</span></div>
+      </div>
+      <input id="rRev" type="range" min="1" max="98" step="0.5">
+      <div class="help">Scores at or above this value are flagged for radiologist review. Lower = fewer missed cases, more false alarms.</div>
+    </div>
+
+    <div class="field">
+      <div class="top">
+        <label><i style="background:var(--high)"></i>High-priority threshold</label>
+        <div class="num"><input id="nHigh" type="number" min="2" max="99" step="0.5"><span>%</span></div>
+      </div>
+      <input id="rHigh" type="range" min="2" max="99" step="0.5">
+      <div class="help">Scores at or above this value are marked "High priority – review first".</div>
+    </div>
+
+    <div class="preview">
+      <h4>Live preview</h4>
+      <div class="bar" id="bar"><div class="mark" id="mRev"></div><div class="mark" id="mHigh"></div></div>
+      <div class="ticks"><span style="left:0;transform:none">0%</span><span id="tRev"></span><span id="tHigh"></span><span style="right:0;left:auto;transform:none">100%</span></div>
+      <div class="legend">
+        <span><i style="background:var(--low)"></i>Low suspicion &lt; <b id="lLow"></b></span>
+        <span><i style="background:var(--review)"></i>Review <b id="lRev"></b></span>
+        <span><i style="background:var(--high)"></i>High priority ≥ <b id="lHigh"></b></span>
+      </div>
+    </div>
+
+    <div class="msg" id="msg"></div>
+
+    <div class="actions">
+      <span class="meta" id="meta">Loading…</span>
+      <div class="btns">
+        <button class="btn" id="reset" type="button">Reset to defaults</button>
+        <button class="btn primary" id="save" type="button" disabled>Save changes</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="card">
+    <h2>Guidance</h2>
+    <p class="sub">How the bands are used</p>
+    <ul class="tips">
+      <li><b>Review threshold</b> controls sensitivity. The default (<span id="dRev"></span>) was chosen on training data to catch about 90% of abnormal cases.</li>
+      <li><b>High-priority threshold</b> only reorders the worklist. It does not change which cases are flagged.</li>
+      <li>Raising the review threshold reduces false alarms but <b>misses more abnormal cases</b>.</li>
+    </ul>
+    <div class="warn">⚠️ Threshold changes affect clinical behaviour. Agree changes with the reviewing radiologists and record the reason.</div>
+  </aside>
+</main>
+
+<footer><div class="wrap">© <span id="yr"></span> Leya Art Ntelznx Private Limited. Proprietary &amp; confidential.</div></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+$("yr").textContent = new Date().getFullYear();
+let saved = null, defaults = null;
+const fmt = v => (+v).toFixed(1).replace(/\.0$/, "") + "%";
+
+function current(){ return { rev: parseFloat($("nRev").value), high: parseFloat($("nHigh").value) }; }
+
+function render(){
+  const { rev, high } = current();
+  $("bar").style.background = `linear-gradient(90deg,var(--low) 0 ${rev}%,var(--review) ${rev}% ${high}%,var(--high) ${high}% 100%)`;
+  $("mRev").style.left = rev + "%"; $("mHigh").style.left = high + "%";
+  $("tRev").style.left = rev + "%"; $("tRev").textContent = fmt(rev);
+  $("tHigh").style.left = high + "%"; $("tHigh").textContent = fmt(high);
+  $("lLow").textContent = fmt(rev); $("lRev").textContent = `${fmt(rev)} – ${fmt(high)}`; $("lHigh").textContent = fmt(high);
+  const valid = rev >= 1 && high <= 99 && rev < high;
+  const changed = saved && (Math.abs(rev - saved.rev) > 1e-6 || Math.abs(high - saved.high) > 1e-6);
+  $("save").disabled = !valid || !changed;
+  if (!valid) show("bad", "Review threshold must be lower than the high-priority threshold.");
+  else if ($("msg").classList.contains("bad")) $("msg").className = "msg";
+}
+function set(rev, high){
+  $("nRev").value = $("rRev").value = (+rev).toFixed(1);
+  $("nHigh").value = $("rHigh").value = (+high).toFixed(1);
+  render();
+}
+function show(kind, text){ $("msg").className = "msg " + kind; $("msg").textContent = text; }
+
+[["rRev","nRev"],["rHigh","nHigh"]].forEach(([r,n]) => {
+  $(r).addEventListener("input", () => { $(n).value = $(r).value; render(); });
+  $(n).addEventListener("input", () => { $(r).value = $(n).value; render(); });
+});
+
+function apply(d){
+  saved = { rev: d.threshold * 100, high: d.high_priority * 100 };
+  defaults = { rev: d.defaults.threshold * 100, high: d.defaults.high_priority * 100 };
+  $("dRev").textContent = fmt(defaults.rev);
+  $("meta").textContent = d.updated_at ? "Last updated: " + d.updated_at : "Using default values";
+  set(saved.rev, saved.high);
+}
+
+fetch("/api/settings").then(r => { if (r.status === 401) { location.href = "/"; throw 0; } return r.json(); })
+  .then(apply).catch(e => e && show("bad", "Could not load settings."));
+
+$("reset").addEventListener("click", () => { if (defaults) { set(defaults.rev, defaults.high); show("ok", "Defaults loaded. Click Save changes to apply."); } });
+
+$("save").addEventListener("click", async () => {
+  const { rev, high } = current();
+  if (!confirm(`Apply new thresholds?\n\nReview: ${fmt(rev)}\nHigh priority: ${fmt(high)}`)) return;
+  $("save").disabled = true;
+  try {
+    const r = await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ threshold: rev / 100, high_priority: high / 100 }) });
+    if (r.status === 401) { location.href = "/"; return; }
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || "Save failed.");
+    apply(d); show("ok", "Settings saved. New analyses will use these thresholds.");
+  } catch (e) { show("bad", e.message); render(); }
+});
+</script>
+</body>
+</html>

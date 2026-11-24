@@ -1,0 +1,11 @@
+fastapi 
+uvicorn 
+onnxruntime 
+pydicom 
+opencv-python-headless 
+numpy 
+python-multipart
+google-cloud-firestore
+openpyxl 
+google-cloud-storage
+reportlab

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bulk analysis | MammoScan AI</title>
+<style>
+  :root{--bg:#fdf6f9;--card:#fff;--ink:#1d2939;--muted:#667085;--brand:#e75480;--brand-deep:#c2185b;--brand-light:#f48fb1;--brand-2:#57585c;--low:#12b76a;--review:#f79009;--high:#d92d20;--line:#f3e1e8}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+  .wrap{max-width:1240px;margin:0 auto;width:100%}
+  .topbar{background:#fff;border-bottom:1px solid var(--line);box-shadow:0 1px 4px rgba(16,24,40,.05)}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px}
+  .topbar img{height:32px;width:auto;display:block}
+  .nav{display:flex;gap:4px;background:#fdeef4;padding:4px;border-radius:999px}
+  .nav a{font-size:13px;font-weight:600;color:var(--brand-deep);text-decoration:none;padding:7px 14px;border-radius:999px;white-space:nowrap}
+  .nav a.on{background:var(--brand);color:#fff}
+  .signout{font-size:13px;font-weight:600;color:var(--brand);text-decoration:none;border:1.5px solid var(--brand);padding:6px 14px;border-radius:999px;white-space:nowrap}
+  .signout:hover{background:var(--brand);color:#fff}
+  @media(max-width:820px){.topbar .wrap{flex-wrap:wrap}.topbar img{height:22px}}
+  header{background:linear-gradient(120deg,var(--brand-light),var(--brand) 50%,var(--brand-deep));color:#fff;padding:18px 0 22px}
+  header .wrap{padding:0 24px} header h1{font-size:22px} header p{opacity:.95;margin-top:3px;font-size:14px}
+  main{padding:24px;flex:1;display:flex;flex-direction:column;gap:18px}
+  .card{background:var(--card);border-radius:18px;box-shadow:0 10px 30px rgba(194,24,91,.08);padding:20px}
+
+  /* Upload */
+  .upload{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap}
+  .drop{flex:1;min-width:280px;display:flex;align-items:center;gap:14px;padding:14px 18px;border:2px dashed #e8c3d2;border-radius:14px;background:#fffafc;transition:.2s}
+  .drop.drag{border-color:var(--brand);background:#fdeef4}
+  .drop .ic{width:44px;height:44px;border-radius:12px;background:#fdeef4;color:var(--brand);display:grid;place-items:center;flex-shrink:0}
+  .drop b{display:block;font-size:15px} .drop small{font-size:12.5px;color:var(--muted)}
+  .pick{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:1.5px solid var(--brand);background:#fff;color:var(--brand);font-weight:600;font-size:13.5px;padding:9px 16px;border-radius:12px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:8px}
+  .btn:hover:not(:disabled){background:#fdeef4}
+  .btn.primary{border:none;color:#fff;background:linear-gradient(120deg,var(--brand),var(--brand-deep))}
+  .btn.primary:hover:not(:disabled){box-shadow:0 6px 18px rgba(231,84,128,.35);background:linear-gradient(120deg,var(--brand),var(--brand-deep))}
+  .btn.ghost{border-color:var(--line);color:var(--muted)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .ctrl .big{padding:0 26px;height:100%;min-height:52px;font-size:15px}
+  input[type=file]{display:none}
+
+  /* Progress */
+  .prog{display:none;margin-top:16px}
+  .prog.show{display:block}
+  .prog .row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
+  .track{height:10px;background:#fdeef4;border-radius:99px;overflow:hidden}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,var(--brand-light),var(--brand),var(--brand-deep));transition:width .3s}
+
+  /* Summary */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  @media(max-width:820px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 6px 20px rgba(194,24,91,.06);border-top:3px solid var(--line);cursor:pointer;transition:.15s}
+  .stat:hover{transform:translateY(-1px)}
+  .stat .v{font-size:26px;font-weight:800;line-height:1.1}
+  .stat .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .stat.all{border-top-color:var(--brand)} .stat.all .v{color:var(--brand)}
+  .stat.high{border-top-color:var(--high)} .stat.high .v{color:var(--high)}
+  .stat.review{border-top-color:var(--review)} .stat.review .v{color:var(--review)}
+  .stat.low{border-top-color:var(--low)} .stat.low .v{color:var(--low)}
+  .stat.error{border-top-color:#98a2b3} .stat.error .v{color:#475467}
+  .stat.on{outline:2px solid currentColor;outline-offset:-2px}
+  .stat.all.on{color:var(--brand)}.stat.high.on{color:var(--high)}.stat.review.on{color:var(--review)}.stat.low.on{color:var(--low)}.stat.error.on{color:#475467}
+
+  /* Table */
+  .tbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .tbar h2{font-size:16px}
+  .search{border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13.5px;font-family:inherit;width:240px}
+  .search:focus{outline:none;border-color:var(--brand)}
+  .tablewrap{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:14px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{position:sticky;top:0;background:#fdeef4;color:var(--brand-deep);text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding:10px 14px;z-index:1;white-space:nowrap}
+  thead th.sort{cursor:pointer;user-select:none}
+  tbody td{padding:9px 14px;border-top:1px solid var(--line);vertical-align:middle}
+  tbody tr:hover{background:#fffafc}
+  td.num{color:var(--muted);width:56px}
+  td.file{max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sc{display:flex;align-items:center;gap:10px;min-width:170px}
+  .sc .mini{flex:1;height:6px;background:#f2f4f7;border-radius:99px;overflow:hidden}
+  .sc .mini i{display:block;height:100%;border-radius:99px}
+  .sc b{width:52px;text-align:right;font-variant-numeric:tabular-nums}
+  .badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 10px;border-radius:999px;color:#fff;white-space:nowrap}
+  .badge.high{background:var(--high)}.badge.review{background:var(--review)}.badge.low{background:var(--low)}
+  .st{font-size:12.5px;color:var(--muted)} .st.error{color:#b42318}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brand);margin-right:6px;animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.3}}
+  .empty{text-align:center;color:var(--muted);padding:40px 10px;font-size:14px}
+  .note{font-size:12.5px;color:var(--muted);text-align:center}
+  footer{border-top:3px solid var(--brand);background:#fff}
+  footer .wrap{padding:16px 24px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <img src="/static/logo.jpeg" alt="Leya Art Ntelznx Private Limited">
+  <nav class="nav">
+    <a href="/app">Single analysis</a>
+    <a href="/exam">4-view exam</a>
+    <a href="/bulk" class="on">Bulk analysis</a>
+    <a href="/settings">Settings</a>
+  </nav>
+  
+  <a class="signout" href="/logout">Sign out</a>
+</div></div>
+
+<header><div class="wrap"><h1>Bulk analysis</h1><p>Analyse many mammograms at once, review results in a table and export to Excel.</p></div></header>
+
+<main class="wrap">
+  <section class="card">
+    <div class="upload">
+      <div class="drop" id="drop">
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg></div>
+        <div><b id="dropT">Drag &amp; drop images or a folder here</b><small id="dropS">DICOM, PNG, JPG or TIFF · up to 1,000 images · max 30 MB each</small></div>
+        <div class="pick">
+          <button class="btn" id="pickFiles" type="button">Select files</button>
+          <button class="btn" id="pickFolder" type="button">Select folder</button>
+        </div>
+      </div>
+      <div class="ctrl">
+        <button class="btn primary big" id="start" type="button" disabled>▶ Start analysis</button>
+        <button class="btn ghost big" id="stop" type="button" style="display:none">■ Stop</button>
+      </div>
+      <input type="file" id="files" multiple accept=".dcm,.png,.jpg,.jpeg,.tif,.tiff">
+      <input type="file" id="folder" webkitdirectory multiple>
+    </div>
+    <div class="prog" id="prog">
+      <div class="row"><span id="progT">0 / 0</span><span id="progR"></span></div>
+      <div class="track"><div class="fill" id="fill"></div></div>
+    </div>
+  </section>
+
+  <section class="stats">
+    <div class="stat all on" data-f="all"><div class="v" id="cAll">0</div><div class="l">Total</div></div>
+    <div class="stat high" data-f="high"><div class="v" id="cHigh">0</div><div class="l">High priority</div></div>
+    <div class="stat review" data-f="review"><div class="v" id="cReview">0</div><div class="l">Review</div></div>
+    <div class="stat low" data-f="low"><div class="v" id="cLow">0</div><div class="l">Low suspicion</div></div>
+    <div class="stat error" data-f="error"><div class="v" id="cErr">0</div><div class="l">Errors</div></div>
+  </section>
+
+  <section class="card">
+    <div class="tbar">
+      <h2>Results</h2>
+      <div class="ctrl">
+        <input class="search" id="q" placeholder="Search file name…">
+        <button class="btn ghost" id="clear" type="button">Clear list</button>
+        <button class="btn primary" id="export" type="button" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>Export to Excel</button>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>#</th><th>File name</th><th class="sort" id="sortScore">Score ↕</th><th>Band</th><th>Status</th></tr></thead>
+        <tbody id="tbody"><tr><td colspan="5" class="empty">No images selected yet.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="note">⚕️ Decision support only. Every image, including low-suspicion results, must be reviewed by a qualified radiologist. Use de-identified images only.</p>
+</main>
+
+<footer><div class="wrap">© <span id="yr"></span> Leya Art Ntelznx Private Limited. Proprietary &amp; confidential.</div></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+$("yr").textContent = new Date().getFullYear();
+const EXT = /\.(dcm|png|jpe?g|tiff?)$/i, MAX_FILES = 1000, MAX_MB = 30, CONCURRENCY = 2;
+const BAND = { high: "High priority", review: "Review", low: "Low suspicion" };
+const COLOR = { high: "var(--high)", review: "var(--review)", low: "var(--low)" };
+let rows = [], running = false, stopFlag = false, filter = "all", sortDir = 0, rafPending = false;
+
+/* ---------- Add files ---------- */
+function addFiles(list){
+  if (running) return;
+  const files = [...list].filter(f => EXT.test(f.name));
+  const skipped = list.length - files.length;
+  const room = MAX_FILES - rows.length;
+  files.slice(0, room).forEach(f => rows.push({
+    id: rows.length + 1, file: f, name: f.webkitRelativePath || f.name,
+    score: null, band: null, status: f.size > MAX_MB * 1048576 ? "error" : "queued",
+    error: f.size > MAX_MB * 1048576 ? `Larger than ${MAX_MB} MB` : ""
+  }));
+  let msg = `${rows.length} image(s) ready`;
+  if (skipped) msg += ` · ${skipped} non-image file(s) skipped`;
+  if (files.length > room) msg += ` · limit of ${MAX_FILES} reached`;
+  $("dropT").textContent = msg;
+  $("dropS").textContent = "Click Start analysis to begin";
+  refresh();
+}
+$("pickFiles").onclick = () => $("files").click();
+$("pickFolder").onclick = () => $("folder").click();
+$("files").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+$("folder").onchange = e => { addFiles(e.target.files); e.target.value = ""; };
+const drop = $("drop");
+["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); }));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); }));
+drop.addEventListener("drop", e => addFiles(e.dataTransfer.files));
+
+/* ---------- Run ---------- */
+async function analyse(row){
+  row.status = "running"; refresh();
+  try {
+    const fd = new FormData(); fd.append("file", row.file);
+    const r = await fetch("/predict?light=1", { method: "POST", body: fd });
+    if (r.status === 401) { stopFlag = true; alert("Your session expired. Please sign in again."); location.href = "/"; return; }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.detail || `Server error (${r.status})`);
+    row.score = d.abnormal_probability; row.band = d.band; row.status = "done"; row.error = "";
+  } catch (e) {
+    row.status = "error"; row.error = e.message || "Failed";
+  }
+  refresh();
+}
+
+$("start").onclick = async () => {
+  const queue = rows.filter(r => r.status === "queued" || (r.status === "error" && r.error !== `Larger than ${MAX_MB} MB`));
+  if (!queue.length) return;
+  queue.forEach(r => { r.status = "queued"; r.error = ""; });
+  running = true; stopFlag = false;
+  $("start").style.display = "none"; $("stop").style.display = "";
+  $("prog").classList.add("show");
+  const t0 = Date.now(); let next = 0, done = 0;
+  const tick = () => {
+    const total = queue.length;
+    $("fill").style.width = (done / total * 100) + "%";
+    $("progT").textContent = `${done} / ${total} analysed`;
+    const per = done ? (Date.now() - t0) / done / CONCURRENCY : 0;
+    $("progR").textContent = done && done < total ? `~${Math.ceil(per * (total - done) / 60000)} min remaining` : (done === total ? "Complete" : "Starting…");
+  };
+  tick();
+  const worker = async () => {
+    while (!stopFlag && next < queue.length) { const row = queue[next++]; await analyse(row); done++; tick(); }
+  };
+  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+  running = false;
+  $("start").style.display = ""; $("stop").style.display = "none";
+  if (stopFlag) $("progR").textContent = "Stopped";
+  refresh();
+};
+$("stop").onclick = () => { stopFlag = true; $("stop").disabled = true; setTimeout(() => $("stop").disabled = false, 500); };
+window.addEventListener("beforeunload", e => { if (running) { e.preventDefault(); e.returnValue = ""; } });
+
+$("clear").onclick = () => {
+  if (running) return;
+  if (rows.length && !confirm("Clear all images and results?")) return;
+  rows = []; $("prog").classList.remove("show");
+  $("dropT").textContent = "Drag & drop images or a folder here";
+  $("dropS").textContent = "DICOM, PNG, JPG or TIFF · up to 1,000 images · max 30 MB each";
+  refresh();
+};
+
+/* ---------- Filters & sorting ---------- */
+document.querySelectorAll(".stat").forEach(s => s.onclick = () => {
+  filter = s.dataset.f;
+  document.querySelectorAll(".stat").forEach(x => x.classList.toggle("on", x === s));
+  refresh();
+});
+$("q").oninput = refresh;
+$("sortScore").onclick = () => { sortDir = sortDir === -1 ? 1 : -1; $("sortScore").textContent = sortDir === -1 ? "Score ↓" : "Score ↑"; refresh(); };
+
+/* ---------- Render ---------- */
+function refresh(){
+  if (rafPending) return; rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; render(); });
+}
+function esc(s){ return s.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c])); }
+function render(){
+  const count = b => rows.filter(r => r.band === b).length;
+  $("cAll").textContent = rows.length; $("cHigh").textContent = count("high");
+  $("cReview").textContent = count("review"); $("cLow").textContent = count("low");
+  $("cErr").textContent = rows.filter(r => r.status === "error").length;
+
+  const hasQueued = rows.some(r => r.status === "queued" || r.status === "error");
+  $("start").disabled = running || !hasQueued;
+  $("start").textContent = rows.some(r => r.status === "done") && hasQueued ? "▶ Resume / retry" : "▶ Start analysis";
+  $("export").disabled = running || !rows.some(r => r.status === "done");
+  $("clear").disabled = running;
+
+  const q = $("q").value.trim().toLowerCase();
+  let view = rows.filter(r =>
+    (filter === "all" || (filter === "error" ? r.status === "error" : r.band === filter)) &&
+    (!q || r.name.toLowerCase().includes(q)));
+  if (sortDir) view = [...view].sort((a, b) => ((a.score ?? -1) - (b.score ?? -1)) * sortDir);
+
+  if (!view.length) {
+    $("tbody").innerHTML = `<tr><td colspan="5" class="empty">${rows.length ? "No results match this filter." : "No images selected yet."}</td></tr>`;
+    return;
+  }
+  $("tbody").innerHTML = view.map(r => {
+    const score = r.score == null ? "" :
+      `<div class="sc"><div class="mini"><i style="width:${r.score*100}%;background:${COLOR[r.band]}"></i></div><b>${(r.score*100).toFixed(1)}%</b></div>`;
+    const band = r.band ? `<span class="badge ${r.band}">${BAND[r.band]}</span>` : "";
+    const st = r.status === "running" ? `<span class="st"><span class="dot"></span>Analysing…</span>`
+             : r.status === "error" ? `<span class="st error" title="${esc(r.error)}">⚠ ${esc(r.error)}</span>`
+             : r.status === "done" ? `<span class="st">✓ Done</span>` : `<span class="st">Queued</span>`;
+    return `<tr><td class="num">${r.id}</td><td class="file" title="${esc(r.name)}">${esc(r.name)}</td><td>${score}</td><td>${band}</td><td>${st}</td></tr>`;
+  }).join("");
+}
+
+/* ---------- Export ---------- */
+$("export").onclick = async () => {
+  $("export").disabled = true;
+  try {
+    const payload = { rows: rows.map(r => ({ file: r.name, score: r.score, band: r.band, status: r.status, error: r.error })) };
+    const res = await fetch("/export", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    if (res.status === 401) { location.href = "/"; return; }
+    if (!res.ok) throw new Error("Export failed.");
+    const blob = await res.blob();
+    const name = (res.headers.get("Content-Disposition") || "").match(/filename="(.+)"/)?.[1] || "MammoScan_Bulk.xlsx";
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+  } catch (e) { alert(e.message); }
+  finally { $("export").disabled = false; }
+};
+</script>
+</body>
+</html>

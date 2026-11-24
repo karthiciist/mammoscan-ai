@@ -1,0 +1,27 @@
+# secrets and local data - never commit 
+.env 
+*.key 
+*.pem 
+settings.json 
+feedback/ 
+cases/ 
+exam_store/ 
+reports/ 
+# environments 
+venv/ 
+.venv/ 
+__pycache__/ 
+*.pyc 
+# the model lives in Cloud Storage, not Git 
+*.onnx 
+*.pt 
+*.zip 
+# patient images 
+*.dcm 
+*.png 
+*.jpg 
+*.jpeg 
+*.tif 
+*.tiff 
+# keep the app logo 
+!static/logo.jpeg
